@@ -4,4 +4,4 @@ version = "0.1.0"
 description = "Capstone project for FA DAE2"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["harmony-py>=1.0.0", "jupyter>=1.1.1"]
