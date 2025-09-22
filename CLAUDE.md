@@ -98,3 +98,11 @@ The project uses these NASA CMR concept IDs:
 - L2P: `C2208421671-POCLOUD` (Himawari AHI GHRSST swath)
 - L3S: `C2805339147-POCLOUD` (NOAA/STAR ACSPO L3S Daily 0.02°)
 - L4: `C1996881146-POCLOUD` (JPL MUR L4 Global 0.01° Daily)
+
+## Documentation
+
+### API Documentation
+- [NASA Harmony API](https://harmony.earthdata.nasa.gov/docs)
+
+### GHRSST Data Documentation
+- [GHRSST Project Overview](https://www.ghrsst.org/)

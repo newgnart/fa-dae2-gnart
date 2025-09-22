@@ -5,9 +5,9 @@
 CREATE SCHEMA IF NOT EXISTS staging;
 
 -- Create simple data landing table
-CREATE TABLE IF NOT EXISTS staging.raw_data (
+CREATE TABLE IF NOT EXISTS staging.ghrsst_raw (
     id SERIAL PRIMARY KEY,
-    data_content TEXT,
+    data_content JSONB,
     file_name VARCHAR(255),
     loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

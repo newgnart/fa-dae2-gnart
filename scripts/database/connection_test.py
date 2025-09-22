@@ -7,6 +7,7 @@ import os
 
 import psycopg
 from dotenv import load_dotenv
+from helper import get_connection
 
 # Load environment variables
 load_dotenv()
@@ -38,9 +39,9 @@ def test_connection():
                 print(f"📊 PostgreSQL version: {version.split(',')[0]}")
 
                 # Test staging schema access
-                cur.execute("SELECT COUNT(*) FROM staging.raw_data")
+                cur.execute("SELECT COUNT(*) FROM staging.ghrsst_raw")
                 count = cur.fetchone()[0]
-                print(f"📋 Staging table has {count} records")
+                print(f"📋 GHRSST staging table has {count} records")
 
                 return True
 
