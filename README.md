@@ -17,5 +17,5 @@ export $(cat .env | xargs)
 ### Initialize the database
 
 ```bash
-PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f scripts/sql/init.sql
+./scripts/run_sql.sh scripts/sql/init.sql
 ```
