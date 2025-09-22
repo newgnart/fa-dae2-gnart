@@ -1,0 +1,2 @@
+-- This file is not needed for the simplified Week 02 lab
+-- All necessary schema creation is handled in init.sql
