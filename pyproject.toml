@@ -9,7 +9,6 @@ dependencies = [
     "jupyter>=1.1.1",
     "polars>=1.33.1",
     "psycopg>=3.2.10",
-    "psycopg2>=2.9.10",
     "pyarrow>=21.0.0",
     "python-dotenv>=1.0.0",
     "rich>=14.1.0",

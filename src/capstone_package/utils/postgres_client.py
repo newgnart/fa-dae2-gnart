@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 from contextlib import contextmanager
 import os
 
-import psycopg2
+import psycopg
 from sqlalchemy import create_engine
 import dlt
 
@@ -51,7 +51,7 @@ class PostgresClient:
         return {
             "host": self.host,
             "port": self.port,
-            "database": self.database,
+            "dbname": self.database,
             "user": self.user,
             "password": self.password,
         }
@@ -70,7 +70,7 @@ class PostgresClient:
         Context manager for PostgreSQL database connections.
 
         Yields:
-            psycopg2.connection: Database connection
+            psycopg.connection: Database connection
 
         Example:
             with destination.get_connection() as conn:
@@ -80,7 +80,7 @@ class PostgresClient:
         """
         conn = None
         try:
-            conn = psycopg2.connect(**self.get_connection_params())
+            conn = psycopg.connect(**self.get_connection_params())
             yield conn
         finally:
             if conn:
@@ -118,7 +118,7 @@ class PostgresClient:
                 result = cursor.fetchone()
                 cursor.close()
                 return result
-        except Exception as e:
+        except Exception:
             return None
 
     def fetch_all(self, query: str, params: Optional[tuple] = None) -> list:

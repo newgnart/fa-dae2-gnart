@@ -3,14 +3,13 @@
 Simple database connection test for Week 02 Lab
 """
 
-import os
-
 import psycopg
 from dotenv import load_dotenv
-from scripts.database.client import PostgresClient
+
+load_dotenv()
+from capstone_package.utils import PostgresClient
 
 # Load environment variables
-load_dotenv()
 
 
 def test_postgres_connection():
