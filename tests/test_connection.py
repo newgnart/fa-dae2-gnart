@@ -7,7 +7,7 @@ import psycopg
 from dotenv import load_dotenv
 
 load_dotenv()
-from capstone_package.utils import PostgresClient
+from capstone_package.utils import PostgresClient, SnowflakeClient
 
 # Load environment variables
 
@@ -34,11 +34,25 @@ def test_postgres_connection():
         return False
 
 
-def main():
-    """Main function for standalone execution."""
-    return test_postgres_connection()
+def test_snowflake_connection():
+    """Get Snowflake connection using private key authentication."""
+    load_dotenv()
+
+    try:
+        conn = SnowflakeClient().connection()
+        print("✅ Snowflake Connected successfully!")
+        return True
+    except Exception as e:
+        print(f"Snowflake Connection failed: {e}")
+        return False
 
 
 if __name__ == "__main__":
-    success = main()
-    exit(0 if success else 1)
+    success = test_postgres_connection()
+    if not success:
+        print("❌ PostgreSQL connection failed")
+        exit(1)
+    success = test_snowflake_connection()
+    if not success:
+        print("❌ Snowflake connection failed")
+        exit(1)
