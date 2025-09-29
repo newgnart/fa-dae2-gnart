@@ -2,6 +2,7 @@ import snowflake.connector
 import os
 from contextlib import contextmanager
 from typing import Optional, Dict, Any
+import dlt
 
 
 class SnowflakeClient:
@@ -79,29 +80,34 @@ class SnowflakeClient:
             print(f"❌ Command failed: {e}")
             return False
 
+    def get_dlt_destination(self):
+        """Get DLT destination configuration for Snowflake."""
 
-def get_snowflake_client() -> SnowflakeClient:
-    """Factory function to get a Snowflake client instance."""
-    return SnowflakeClient()
+        # Read private key file and convert to private_key for DLT
+        private_key_path = os.path.expanduser(
+            self.connection_params["private_key_file"]
+        )
 
+        try:
+            with open(private_key_path, "r") as key_file:
+                private_key_data = key_file.read()
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Private key file not found: {private_key_path}")
 
-# def create_schema_if_not_exists(schema_name: str, database_name: Optional[str] = None) -> bool:
-#     """Create schema if it doesn't exist."""
-#     client = get_snowflake_client()
-#     db_name = database_name or os.getenv("SNOWFLAKE_DATABASE")
-#     return client.execute_command(f"CREATE SCHEMA IF NOT EXISTS {db_name}.{schema_name}")
+        # Create credentials object that DLT expects
+        credentials = {
+            "database": self.connection_params["database"],
+            "username": self.connection_params["user"],
+            "host": self.connection_params["account"],
+            "warehouse": self.connection_params["warehouse"],
+            "role": self.connection_params["role"],
+            "private_key": private_key_data,
+        }
 
+        # Only add private key password if it exists
+        if self.connection_params.get("private_key_file_pwd"):
+            credentials["private_key_passphrase"] = self.connection_params[
+                "private_key_file_pwd"
+            ]
 
-# def create_stage_if_not_exists(stage_name: str, file_format: str = "CSV",
-#                               schema_name: Optional[str] = None) -> bool:
-#     """Create stage if it doesn't exist."""
-#     client = get_snowflake_client()
-
-#     if schema_name:
-#         with client.cursor() as cursor:
-#             cursor.execute(f"USE SCHEMA {schema_name}")
-
-#     format_clause = f"FILE_FORMAT = (TYPE = '{file_format}')" if file_format != "CSV" else ""
-#     command = f"CREATE STAGE IF NOT EXISTS {stage_name} {format_clause}"
-
-#     return client.execute_command(command)
+        return dlt.destinations.snowflake(credentials=credentials)

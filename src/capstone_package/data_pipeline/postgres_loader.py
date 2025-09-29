@@ -12,7 +12,7 @@ def load_parquet_to_postgres(
     file_path: str,
     table_name: str,
     postgres_client: PostgresClient,
-    schema_name: str = os.getenv("DB_SCHEMA") or "fa02_staging",
+    schema_name: str = os.getenv("DB_SCHEMA"),
     write_disposition: str = "append",
 ):
     """Load parquet file to PostgreSQL using DLT filesystem source."""
@@ -46,7 +46,7 @@ def load_parquet_to_postgres_wo_dlt(
     file_path: str,
     table_name: str,
     postgres_client: PostgresClient,
-    schema_name: str = os.getenv("DB_SCHEMA") or "fa02_staging",
+    schema_name: str = os.getenv("DB_SCHEMA"),
 ):
     # Read parquet file
     df = pl.read_parquet(file_path).head(100)
