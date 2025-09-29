@@ -7,21 +7,10 @@ import os
 
 import psycopg
 from dotenv import load_dotenv
-from helper import get_connection
+from helper import get_connection_params
 
 # Load environment variables
 load_dotenv()
-
-
-def get_connection_params():
-    """Get database connection parameters from environment variables."""
-    return {
-        "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": os.getenv("POSTGRES_PORT", "5433"),
-        "dbname": os.getenv("POSTGRES_DB", "postgres"),
-        "user": os.getenv("POSTGRES_USER", "postgres"),
-        "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
-    }
 
 
 def test_connection():
@@ -37,11 +26,6 @@ def test_connection():
                 version = cur.fetchone()[0]
                 print("✅ Connected successfully!")
                 print(f"📊 PostgreSQL version: {version.split(',')[0]}")
-
-                # Test staging schema access
-                cur.execute("SELECT COUNT(*) FROM staging.ghrsst_raw")
-                count = cur.fetchone()[0]
-                print(f"📋 GHRSST staging table has {count} records")
 
                 return True
 

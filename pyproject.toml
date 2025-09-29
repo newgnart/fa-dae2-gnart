@@ -5,11 +5,8 @@ description = "Capstone project for FA DAE2"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "harmony-py>=1.0.0",
     "jupyter>=1.1.1",
-    "netcdf4>=1.7.2",
+    "polars>=1.33.1",
     "psycopg>=3.2.10",
-    "psycopg2>=2.9.10",
     "pyarrow>=21.0.0",
-    "xarray>=2025.9.0",
 ]
