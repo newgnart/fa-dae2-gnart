@@ -71,7 +71,7 @@ python scripts/database/crud_demo.py
 Required environment variables (see `.env.example`):
 - `EDL_TOKEN`: NASA Earthdata Login token for API access
 - `POSTGRES_HOST`: Database host (default: localhost)
-- `POSTGRES_PORT`: Database port (default: 5433)
+- `POSTGRES_PORT`: Database port (default: 5432)
 - `POSTGRES_DB`: Database name (default: postgres)
 - `POSTGRES_USER`: Database user (default: postgres)
 - `POSTGRES_PASSWORD`: Database password (default: postgres)

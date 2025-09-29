@@ -1,14 +1,17 @@
-from typing import Any, List, Optional
-from pathlib import Path
+#!/usr/bin/env python3
+"""
+Simple CRUD operations demo for Week 02 Lab
+"""
+
 import os
+from typing import Any, List, Optional
+
 import psycopg
-import dlt
-import polars as pl
-import logging
-from client import PostgresClient
+from dotenv import load_dotenv
+from helper import get_connection
 
-
-logger = logging.getLogger(__name__)
+# Load environment variables
+load_dotenv()
 
 
 def load_parquet_to_postgres(
@@ -32,6 +35,8 @@ def load_parquet_to_postgres(
     Returns:
         DLT pipeline run result
     """
+    import dlt
+    from pathlib import Path
 
     parquet_path = Path(parquet_file_path)
 
@@ -146,13 +151,6 @@ def load_parquet_to_postgres(
         raise
 
 
-def get_postgres_connection():
-    """Get database connection."""
-    params = {
-        "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": os.getenv("POSTGRES_PORT", "5433"),
-        "dbname": os.getenv("POSTGRES_DB", "postgres"),
-        "user": os.getenv("POSTGRES_USER", "postgres"),
-        "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
-    }
-    return psycopg.connect(**params)
+if __name__ == "__main__":
+    success = main()
+    exit(0 if success else 1)
