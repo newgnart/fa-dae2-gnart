@@ -1,20 +1,24 @@
 [project]
-name = "fa-dae2-capstone-gnart"
+name = "capstone_package"
 version = "0.1.0"
-description = "Capstone project for FA DAE2"
+description = "Capstone project package for FA DAE2"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "dlt>=1.17.0",
     "jupyter>=1.1.1",
     "polars>=1.33.1",
     "psycopg>=3.2.10",
+    "psycopg2>=2.9.10",
     "pyarrow>=21.0.0",
     "python-dotenv>=1.0.0",
+    "rich>=14.1.0",
+    "snowflake-connector-python>=3.17.4",
+    "sqlalchemy>=2.0.43",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.uv.sources]
+capstone_package = { path = "./src" }
 
-[tool.hatch.build.targets.wheel]
-packages = ["scripts"]
+[tool.uv]
+package = true

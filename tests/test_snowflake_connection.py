@@ -13,7 +13,7 @@ def get_snowflake_connection():
             user=os.getenv("SNOWFLAKE_USER"),
             authenticator="SNOWFLAKE_JWT",
             private_key_file=os.getenv("SNOWFLAKE_PRIVATE_KEY_FILE_PATH"),
-            private_key_file_pwd=os.getenv("SNOWFLAKE_PRIVATE_KEY_FILE_PWD"),
+            # private_key_file_pwd='os.getenv("SNOWFLAKE_PRIVATE_KEY_FILE_PWD")',
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
             database=os.getenv("SNOWFLAKE_DATABASE"),
             schema=os.getenv("SNOWFLAKE_SCHEMA"),

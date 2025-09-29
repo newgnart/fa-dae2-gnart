@@ -4,12 +4,22 @@
 -- Create  schema
 CREATE SCHEMA IF NOT EXISTS fa02_staging;
 
--- Create simple data landing table
-CREATE TABLE IF NOT EXISTS fa02_staging.raw_logs (
-    id SERIAL PRIMARY KEY,
-    data_content JSONB,
-    file_name VARCHAR(255),
-    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Create logs table with proper schema to prevent DLT auto-creation
+CREATE TABLE IF NOT EXISTS fa02_staging.logs (
+    address VARCHAR(42),
+    topics JSONB,
+    data TEXT,
+    block_number BIGINT,
+    block_hash VARCHAR(66),
+    time_stamp BIGINT,
+    gas_price BIGINT,
+    gas_used BIGINT,
+    log_index INTEGER,
+    transaction_hash VARCHAR(66),
+    transaction_index INTEGER,
+    chainid INTEGER,
+    chain TEXT,
+    contract_address VARCHAR(42)
 );
 
 -- Grant permissions (user already exists from Docker environment)

@@ -1,0 +1,413 @@
+"""Etherscan API client implementation."""
+
+import os
+import json
+import dlt
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Iterator, Union
+import pandas as pd
+from dataclasses import dataclass
+from dlt.sources.rest_api import rest_api_source
+from dlt.sources.helpers.rest_client import paginators
+
+from .base import BaseAPIClient, BaseSource, APIConfig
+from .base import APIError
+
+
+@dataclass
+class APIs:
+    """API-specific settings."""
+
+    etherscan_api_key: Optional[str] = None
+    coingecko_api_key: Optional[str] = None
+
+    # Rate limits (requests per second)
+    etherscan_rate_limit: float = 5.0
+    coingecko_rate_limit: float = 5.0
+    defillama_rate_limit: float = 10.0
+
+    def __post_init__(self):
+        # Load from environment if not provided
+        if self.etherscan_api_key is None:
+            self.etherscan_api_key = os.getenv("ETHERSCAN_API_KEY")
+
+
+class APIUrls:
+    """API endpoint URLs."""
+
+    ETHERSCAN = "https://api.etherscan.io/v2/api"
+
+
+class EtherscanClient(BaseAPIClient):
+    """Etherscan API client implementation."""
+
+    @classmethod
+    def _load_chainid_mapping(cls) -> Dict[str, int]:
+        """Load chain name to chainid mapping from resource file."""
+        # Get the path to the chainid.json file relative to this module
+        current_file = Path(__file__)
+        chainid_path = (
+            current_file.parent.parent.parent.parent / "resource" / "chainid.json"
+        )
+
+        try:
+            with chainid_path.open("r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Chain ID mapping file not found at {chainid_path}"
+            )
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in chain ID mapping file: {e}")
+
+    def __init__(
+        self,
+        chainid: Optional[int] = None,
+        chain: Optional[str] = None,
+        api_key: Optional[str] = None,
+        calls_per_second: float = 5.0,
+    ):
+        # Validate that exactly one of chainid or chain is provided
+        if chainid is not None and chain is not None:
+            raise ValueError(
+                "Cannot specify both 'chainid' and 'chain' parameters. Use only one."
+            )
+        if chainid is None and chain is None:
+            raise ValueError("Must specify either 'chainid' or 'chain' parameter.")
+
+        # Resolve chainid from chain name if needed
+        chainid_mapping = self._load_chainid_mapping()
+        if chain is not None:
+            if chain not in chainid_mapping:
+                available_chains = ", ".join(sorted(chainid_mapping.keys()))
+                raise ValueError(
+                    f"Unknown chain '{chain}'. Available chains: {available_chains}"
+                )
+            chainid = chainid_mapping[chain]
+
+        self.chainid = chainid
+        chain_name_mapping = {v: k for k, v in chainid_mapping.items()}
+        self.chain = chain_name_mapping.get(chainid, "unknown")
+
+        # Create APIs instance to load environment variables
+        apis = APIs()
+        config = APIConfig(
+            base_url=APIUrls.ETHERSCAN,
+            api_key=api_key or apis.etherscan_api_key,
+            rate_limit=calls_per_second,
+        )
+        super().__init__(config)
+
+    def _build_request_params(self, **kwargs) -> Dict[str, Any]:
+        """Build request parameters with chain ID and API key."""
+        return {"chainid": self.chainid, "apikey": self.config.api_key, **kwargs}
+
+    def _handle_response(self, response) -> Any:
+        """Handle Etherscan API response."""
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("status") == "0":
+            message = data.get("message", "Etherscan API error")
+            if "rate limit" in message.lower():
+                raise APIError(f"Rate limit exceeded: {message}")
+            raise APIError(f"API error: {message}")
+
+        return data["result"]
+
+    def get_latest_block(
+        self, timestamp: Optional[int] = None, closest: str = "before"
+    ) -> int:
+        """Get the latest block number or block closest to timestamp."""
+        if timestamp is None:
+            timestamp = int(datetime.now().timestamp())
+
+        pass  # Getting latest block
+
+        params = {
+            "module": "block",
+            "action": "getblocknobytime",
+            "timestamp": timestamp,
+            "closest": closest,
+        }
+        result = self.make_request("", params)
+
+        latest_block = int(result)
+        pass  # Latest block retrieved
+        return latest_block
+
+    def get_contract_abi(
+        self, address: str, save: bool = True, save_dir: str = "data/abi"
+    ) -> Dict[str, Any]:
+        """Get contract ABI and optionally save to file."""
+        # Get contract metadata to check for proxy
+        try:
+            contract_metadata = self.get_contract_metadata(address)
+        except Exception as e:
+            self.logger.warning(f"Could not get metadata for {address}: {e}")
+            contract_metadata = {}
+
+        # Fetch main contract ABI
+        params = {
+            "module": "contract",
+            "action": "getabi",
+            "address": address,
+        }
+        result = self.make_request("", params)
+        abi = json.loads(result)
+
+        # Check if it's a proxy and fetch implementation ABI
+        implementation_abi = None
+        implementation_address = None
+        if contract_metadata.get("Proxy"):
+            implementation_address = contract_metadata.get("Implementation")
+            if implementation_address:
+                pass  # Contract is a proxy, fetching implementation ABI
+                try:
+                    impl_params = {
+                        "module": "contract",
+                        "action": "getabi",
+                        "address": implementation_address,
+                    }
+                    impl_result = self.make_request("", impl_params)
+                    implementation_abi = json.loads(impl_result)
+                except Exception as e:
+                    self.logger.warning(
+                        f"Could not fetch implementation ABI for {implementation_address}: {e}"
+                    )
+
+        if save:
+            self._save_abi(
+                address, abi, implementation_address, implementation_abi, save_dir
+            )
+
+        return abi, implementation_abi
+
+    def get_contract_metadata(self, address: str) -> Dict[str, Any]:
+        """Get contract metadata including proxy status."""
+        pass  # Fetching metadata for contract
+
+        params = {
+            "module": "contract",
+            "action": "getsourcecode",
+            "address": address,
+        }
+        result = self.make_request("", params)
+
+        source_data = result[0] if isinstance(result, list) else result
+        if not source_data:
+            raise ValueError(f"No source code found for contract {address}")
+
+        return {
+            "ContractName": source_data.get("ContractName"),
+            "Proxy": source_data.get("Proxy") == "1",
+            "Implementation": source_data.get("Implementation"),
+        }
+
+    def get_contract_creation_block_number(self, address: str) -> int:
+        """Get contract creation block number for given address."""
+        return int(self.get_contract_creation_info(address)["blockNumber"])
+
+    def get_transaction_receipt(
+        self, txhash: str, save: bool = True, save_dir: str = "data/receipts"
+    ) -> Dict[str, Any]:
+        """Get transaction receipt for given transaction hash."""
+        # Ensure txhash has 0x prefix
+        if not txhash.startswith("0x"):
+            txhash = "0x" + txhash
+
+        pass  # Getting transaction receipt
+
+        params = {
+            "module": "proxy",
+            "action": "eth_getTransactionReceipt",
+            "txhash": txhash,
+        }
+
+        result = self.make_request("", params)
+
+        if result is None:
+            raise APIError(f"Transaction receipt not found for {txhash}")
+
+        if save:
+            self._save_receipt(txhash, result, save_dir)
+
+        return result
+
+    def get_contract_creation_info(
+        self, contract_addresses: List[str]
+    ) -> Dict[str, Any]:
+        """Get contract creation information for one or more addresses."""
+        if isinstance(contract_addresses, str):
+            contract_addresses = [contract_addresses]
+
+        pass  # Getting creation info for contracts
+
+        params = {
+            "module": "contract",
+            "action": "getcontractcreation",
+            "contractaddresses": ",".join(contract_addresses),
+        }
+        result = self.make_request("", params)
+
+        if len(contract_addresses) == 1:
+            return result[0] if isinstance(result, list) else result
+        return result
+
+    def _save_abi(
+        self,
+        address: str,
+        abi: Dict[str, Any],
+        implementation_address: Optional[str],
+        implementation_abi: Optional[Dict[str, Any]],
+        save_dir: str,
+    ):
+        """Save ABI(s) to file."""
+        os.makedirs(save_dir, exist_ok=True)
+        # create a csv file with the following columns: address, implementation_address
+        csv_path = os.path.join(save_dir, "implementation.csv")
+
+        # Check if file exists to determine whether to write headers
+        if not os.path.exists(csv_path):
+            # Create new file with headers
+            with open(csv_path, "w") as f:
+                f.write("address,implementation_address\n")
+
+        with open(csv_path, "a") as f:
+            f.write(f"{address},{implementation_address}\n")
+        df = pd.read_csv(csv_path)
+        df = df.drop_duplicates()
+        df.to_csv(csv_path, index=False)
+
+        # Save main ABI
+        main_path = os.path.join(save_dir, f"{address}.json")
+        with open(main_path, "w") as f:
+            json.dump(abi, f, indent=2)
+        pass  # ABI saved
+
+        # Save implementation ABI if available
+        if implementation_abi:
+            impl_path = os.path.join(save_dir, f"{implementation_address}.json")
+            with open(impl_path, "w") as f:
+                json.dump(implementation_abi, f, indent=2)
+            pass  # Implementation ABI saved
+
+    def _save_receipt(self, txhash: str, receipt: Dict[str, Any], save_dir: str):
+        """Save transaction receipt to file."""
+        os.makedirs(save_dir, exist_ok=True)
+
+        receipt_path = os.path.join(save_dir, f"{txhash}.json")
+        with open(receipt_path, "w") as f:
+            json.dump(receipt, f, indent=2)
+        pass  # Receipt saved
+
+
+class EtherscanSource(BaseSource):
+    """Creating DLT source for Etherscan data."""
+
+    def __init__(self, client: EtherscanClient):
+        super().__init__(client)
+
+    def get_available_sources(self) -> List[str]:
+        """Return list of available source names."""
+        return ["logs", "transactions"]
+
+    def create_dlt_source(self, **kwargs):
+        """Create DLT source for Etherscan API."""
+        session = self.client._session
+        return rest_api_source(
+            {
+                "client": {
+                    "base_url": self.client.config.base_url,
+                    "paginator": paginators.PageNumberPaginator(
+                        base_page=1, total_path=None, page_param="page"
+                    ),
+                    "session": session,
+                },
+                "resources": [
+                    {
+                        "name": "",  # Etherscan result is not nested
+                        "endpoint": {"params": kwargs},
+                    },
+                ],
+            }
+        )
+
+    def logs(
+        self,
+        address: str,
+        from_block: int = 0,
+        to_block: str = "latest",
+        offset: int = 1000,
+    ):
+        """Get event logs for a given address."""
+
+        def _fetch():
+            params = {
+                "module": "logs",
+                "action": "getLogs",
+                "address": address,
+                "fromBlock": from_block,
+                "toBlock": to_block,
+                "offset": offset,
+                "chainid": self.client.chainid,
+                "apikey": self.client.config.api_key,
+            }
+
+            pass  # Fetching logs for address
+
+            source = self.create_dlt_source(**params)
+            for item in source:
+                item["chainid"] = self.client.chainid
+                yield item
+
+        return dlt.resource(
+            _fetch,
+            columns={
+                "topics": {"data_type": "json"},
+                "time_stamp": {"data_type": "bigint"},
+                "block_number": {"data_type": "bigint"},
+                "log_index": {"data_type": "bigint"},
+                "transaction_index": {"data_type": "bigint"},
+                "gas_price": {"data_type": "bigint"},
+                "gas_used": {"data_type": "bigint"},
+            },
+        )
+
+    def transactions(
+        self,
+        address: str,
+        from_block: int = 0,
+        to_block: str = "latest",
+        offset: int = 1000,
+        sort: str = "asc",
+    ):
+        """Get transactions for a given address."""
+
+        def _fetch():
+            params = {
+                "module": "account",
+                "action": "txlist",
+                "address": address,
+                "startblock": from_block,
+                "endblock": to_block,
+                "offset": offset,
+                "sort": sort,
+                "chainid": self.client.chainid,
+                "apikey": self.client.config.api_key,
+            }
+
+            pass  # Fetching transactions for address
+
+            source = self.create_dlt_source(**params)
+            for item in source:
+                item["chainid"] = self.client.chainid
+                yield item
+
+        return dlt.resource(
+            _fetch,
+            columns={
+                "time_stamp": {"data_type": "bigint"},
+            },
+        )

@@ -1,13 +1,10 @@
 from typing import Optional, Any, Dict
 from contextlib import contextmanager
 import os
-import logging
 
 import psycopg2
 from sqlalchemy import create_engine
 import dlt
-
-logger = logging.getLogger(__name__)
 
 
 class PostgresClient:
@@ -122,7 +119,6 @@ class PostgresClient:
                 cursor.close()
                 return result
         except Exception as e:
-            logger.warning(f"Failed to query {query} with error {e}, returning None")
             return None
 
     def fetch_all(self, query: str, params: Optional[tuple] = None) -> list:
