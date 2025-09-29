@@ -7,16 +7,16 @@ import os
 
 import psycopg
 from dotenv import load_dotenv
-from scripts.database.helper import get_connection_params
+from scripts.database.client import PostgresClient
 
 # Load environment variables
 load_dotenv()
 
 
-def test_connection():
+def test_postgres_connection():
     """Test database connection and return True if successful."""
     try:
-        params = get_connection_params()
+        params = PostgresClient.from_env().get_connection_params()
         print(f"🔌 Connecting to PostgreSQL at {params['host']}:{params['port']}...")
 
         with psycopg.connect(**params) as conn:
@@ -37,7 +37,7 @@ def test_connection():
 
 def main():
     """Main function for standalone execution."""
-    return test_connection()
+    return test_postgres_connection()
 
 
 if __name__ == "__main__":

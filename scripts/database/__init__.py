@@ -2,6 +2,6 @@
 Database utilities for the capstone project.
 """
 
-from .helper import get_connection
+from .client import PostgresClient
 
-__all__ = ["get_connection"]
+__all__ = ["PostgresClient"]

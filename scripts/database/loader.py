@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 import psycopg
 from dotenv import load_dotenv
-from helper import get_connection
+from scripts.database.client import PostgresClient
 
 # Load environment variables
 load_dotenv()

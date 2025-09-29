@@ -1,4 +1,4 @@
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any, Dict
 from contextlib import contextmanager
 import os
 import logging
@@ -156,75 +156,3 @@ class PostgresClient:
             cursor.execute(query, params)
             conn.commit()
             cursor.close()
-
-    def table_exists(self, table_schema: str, table_name: str) -> bool:
-        """
-        Check if a table exists in the database.
-
-        Args:
-            table_schema: Schema name
-            table_name: Table name
-
-        Returns:
-            True if table exists, False otherwise
-        """
-        query = """
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = %s AND table_name = %s
-        )
-        """
-        result = self.fetch_one(query, (table_schema, table_name))
-        return result[0] if result else False
-
-    def get_table_row_count(self, table_schema: str, table_name: str) -> int:
-        """
-        Get the row count for a specific table.
-
-        Args:
-            table_schema: Schema name
-            table_name: Table name
-
-        Returns:
-            Number of rows in the table, or 0 if table doesn't exist
-        """
-        try:
-            if not self.table_exists(table_schema, table_name):
-                return 0
-
-            query = f"SELECT COUNT(*) FROM {table_schema}.{table_name}"
-            result = self.fetch_one(query)
-            return result[0] if result else 0
-        except Exception as e:
-            logger.warning(
-                f"Error getting row count for {table_schema}.{table_name}: {e}"
-            )
-            return 0
-
-    def get_max_loaded_block(
-        self,
-        table_schema: str,
-        table_name: str,
-        chainid: int,
-        address: str,
-        address_column_name: str,
-        block_column_name: str = "block_number",
-    ) -> int:
-        address = address.lower()
-        try:
-            query = f"""
-            SELECT MAX({block_column_name}) 
-            FROM {table_schema}.{table_name} 
-            WHERE {address_column_name} = %s
-            AND chainid = %s
-            """
-            result = self.fetch_one(query, (address, chainid))
-
-            if result and result[0] is not None:
-                return int(result[0])
-            else:
-                return 0
-
-        except Exception as e:
-            logger.warning(f"No result found querying loaded blocks: {e}")
-            return 0
