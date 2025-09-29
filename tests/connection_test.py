@@ -7,7 +7,7 @@ import os
 
 import psycopg
 from dotenv import load_dotenv
-from helper import get_connection_params
+from scripts.database.helper import get_connection_params
 
 # Load environment variables
 load_dotenv()

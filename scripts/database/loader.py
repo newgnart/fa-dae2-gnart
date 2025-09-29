@@ -4,6 +4,7 @@ Simple CRUD operations demo for Week 02 Lab
 """
 
 import os
+from typing import Any, List, Optional
 
 import psycopg
 from dotenv import load_dotenv
