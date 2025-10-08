@@ -1,13 +1,14 @@
 from typing import Optional, Any, Dict
-from contextlib import contextmanager
 import os
 
 import psycopg
 from sqlalchemy import create_engine
 import dlt
 
+from .base_client import BaseDatabaseClient
 
-class PostgresClient:
+
+class PostgresClient(BaseDatabaseClient):
     """Object-oriented PostgreSQL client for database operations."""
 
     def __init__(
@@ -33,21 +34,21 @@ class PostgresClient:
         self.database = database
         self.user = user
         self.password = password
-        self._engine = None
+        super().__init__()
 
     @classmethod
     def from_env(cls) -> "PostgresClient":
         """Create from environment variables"""
         return cls(
-            host=os.getenv("POSTGRES_HOST"),
-            port=int(os.getenv("POSTGRES_PORT", "5432")),
-            database=os.getenv("POSTGRES_DB"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),
+            host=cls._get_env_var("POSTGRES_HOST"),
+            port=int(cls._get_env_var("POSTGRES_PORT", "5432")),
+            database=cls._get_env_var("POSTGRES_DB"),
+            user=cls._get_env_var("POSTGRES_USER"),
+            password=cls._get_env_var("POSTGRES_PASSWORD"),
         )
 
-    def get_connection_params(self) -> Dict[str, Any]:
-        """Return connection parameters for database clients."""
+    def _build_connection_params(self) -> Dict[str, Any]:
+        """Build connection parameters from instance variables."""
         return {
             "host": self.host,
             "port": self.port,
@@ -56,35 +57,22 @@ class PostgresClient:
             "password": self.password,
         }
 
+    def get_connection_params(self) -> Dict[str, Any]:
+        """Return connection parameters for database clients."""
+        return self.connection_params
+
     def get_connection_url(self) -> str:
         """Return connection URL for database clients."""
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        params = self.connection_params
+        return f"postgresql://{params['user']}:{params['password']}@{params['host']}:{params['port']}/{params['dbname']}"
 
     def get_dlt_destination(self) -> Any:
         """Return DLT destination for pipeline operations."""
         return dlt.destinations.postgres(self.get_connection_url())
 
-    @contextmanager
-    def get_connection(self):
-        """
-        Context manager for PostgreSQL database connections.
-
-        Yields:
-            psycopg.connection: Database connection
-
-        Example:
-            with destination.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM table")
-                result = cursor.fetchone()
-        """
-        conn = None
-        try:
-            conn = psycopg.connect(**self.get_connection_params())
-            yield conn
-        finally:
-            if conn:
-                conn.close()
+    def _create_connection(self):
+        """Create a new PostgreSQL connection."""
+        return psycopg.connect(**self.connection_params)
 
     @property
     def sqlalchemy_engine(self):
@@ -95,60 +83,6 @@ class PostgresClient:
             sqlalchemy.engine.Engine: SQLAlchemy engine
         """
         if self._engine is None:
-            params = self.get_connection_params()
-            connection_string = f"postgresql://{params['user']}:{params['password']}@{params['host']}:{params['port']}/{params['database']}"
-            self._engine = create_engine(connection_string)
+            self._engine = create_engine(self.get_connection_url())
         return self._engine
 
-    def fetch_one(self, query: str, params: Optional[tuple] = None) -> Any:
-        """
-        Execute a query and return the first result.
-
-        Args:
-            query: SQL query string
-            params: Query parameters (optional)
-
-        Returns:
-            Query result (fetchone())
-        """
-        try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute(query, params)
-                result = cursor.fetchone()
-                cursor.close()
-                return result
-        except Exception:
-            return None
-
-    def fetch_all(self, query: str, params: Optional[tuple] = None) -> list:
-        """
-        Execute a query and return all results.
-
-        Args:
-            query: SQL query string
-            params: Query parameters (optional)
-
-        Returns:
-            List of query results (fetchall())
-        """
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            result = cursor.fetchall()
-            cursor.close()
-            return result
-
-    def execute(self, query: str, params: Optional[tuple] = None) -> None:
-        """
-        Execute a query without returning results (INSERT, UPDATE, DELETE).
-
-        Args:
-            query: SQL query string
-            params: Query parameters (optional)
-        """
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            conn.commit()
-            cursor.close()
