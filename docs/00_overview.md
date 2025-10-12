@@ -1,15 +1,6 @@
 # Capstone project for Foundry AI Academy Data AI Engineering
-Project description: 
-- track logs(events) and transactions of a smart contract on Ethereum.
-- store the data in Postgres and Snowflake.
-- dashboard with 
-- chat with data
+Inspired by [Visa on Chain Analytics](https://visaonchainanalytics.com/) which showcases how fiat-backed stablecoins move via public blockchains globally
+- Key Metrics: Stablecoin Supply, Transactions Volume, Transaction Count, Addresses
+- Stablecoins: USDC, USDT, PYUSD, FDUSD, USDP and USDG on several blockchains
 
-
-1. Data Ingestion & Pipeline
-- Historical data loading with batch pipeline
-- Streaming data with real-time pipeline
-
-2. Data Transformation & Modeling
-
-3. 
+This project is built to track decentralized stablecoins (crvUSD, GHO, frxUSD) usages on Ethereum.

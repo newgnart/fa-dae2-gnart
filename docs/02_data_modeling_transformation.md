@@ -1,5 +1,49 @@
 # Data Modeling & Transformation
 
+## Conceptual Data Model
+The entities and their relationships
+
+- Entities
+  - USER: Users who interact with stablecoins
+  - ACQUISITION: How users obtain stablecoins (mint, buy, receive)
+  - ALLOCATION: What users do with stablecoins (provide liquidity, lend, trade, hold)
+  - EXIT: How users dispose of stablecoins (burn, sell, transfer out)
+  - VENUE: Where interactions occur (protocols, pools, exchanges)
+
+- Relationships
+  - USER --performs--> ACQUISITION --> gains stablecoins
+  - USER --performs--> ALLOCATION --> uses stablecoins at VENUE
+  - USER --performs--> EXIT --> loses stablecoins
+
+
+## Logical Data Model
+
+```
+┌─────────────────┐     ┌──────────────────┐
+│   RAW_LOGS      │     │ RAW_TRANSACTIONS │
+│   (Raw Layer)   │     │   (Raw Layer)    │
+└────────┬────────┘     └────────┬─────────┘
+         │                       │
+         └───────────┬───────────┘
+                     │ Decode
+                     ▼
+         ┌───────────────────────┐
+         │    DECODED_EVENTS     │
+         └───────────┬───────────┘
+                     │ Business Logic
+                     ▼
+    ┌────────────────┴─────────────────┐
+    │                                  │
+    ▼                                  ▼
+┌──────────────┐              ┌──────────────────┐
+│ FACT Tables  │              │  DIM Tables      │
+│ - Acquisition│              │  - User          │
+│ - Allocation │              │  - Venue         │
+│ - Exit       │              │  - Date          │
+│ - Balance    │              └──────────────────┘
+└──────────────┘
+```
+
 ## Raw data
 ### Logs table
 | Column Name       | Data Type     | Description                   |
@@ -16,9 +60,6 @@
 | transaction_hash  | string        | transaction hash of the log   |
 | transaction_index | integer       | transaction index of the log  |
 | chainid           | integer       | chain id of the log           |
-| chain             | string        | chain of the log              |
-| contract_address  | string        | contract address of the log   |
-
 
 ### Transactions table
 | Column Name       | Data Type     | Description                          |
@@ -33,8 +74,7 @@
 | gas_used          | integer       | gas used of the transaction          |
 | transaction_index | integer       | transaction index of the transaction |
 | chainid           | integer       | chain id of the transaction          |
-| chain             | string        | chain of the transaction             |
-| contract_address  | string        | contract address of the transaction  |
+
 
 ## Transformation
 ### Logs table

@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Type, Callable
 from .rate_limiter import RateLimitedSession, RateLimitStrategy
 
 
-class APIError:
+class APIError(Exception):
     """Exception raised for API-related errors."""
 
     pass
@@ -194,9 +194,7 @@ class BaseAPIClient(ABC, metaclass=AutoRegisterMeta):
                         f"Request failed after {self.config.retry_attempts} attempts: {e}"
                     )
 
-        raise APIError(
-            f"Request failed after {self.config.retry_attempts} attempts"
-        ) from last_exception
+        raise APIError() from last_exception
 
 
 class BaseDLTSource(ABC, metaclass=AutoRegisterMeta):

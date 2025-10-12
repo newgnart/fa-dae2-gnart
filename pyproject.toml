@@ -1,5 +1,5 @@
 [project]
-name = "capstone_package"
+name = "onchaindata"
 version = "0.1.0"
 description = "Capstone project package for FA DAE2"
 readme = "README.md"
@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "dlt>=1.17.0",
     "jupyter>=1.1.1",
+    "pandas>=2.3.3",
     "polars>=1.33.1",
     "psycopg>=3.2.10",
     "pyarrow>=21.0.0",
@@ -17,7 +18,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-capstone_package = { path = "./src" }
+onchaindata = { path = "./src" }
 
 [tool.uv]
 package = true
