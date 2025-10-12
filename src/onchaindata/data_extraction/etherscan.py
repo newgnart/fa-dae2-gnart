@@ -481,7 +481,7 @@ class EtherscanExtractor:
                     data.append(record)
 
             if len(data) == 0:
-                logger.debug(
+                logger.info(
                     f"{chain} - {address} - {table} - {from_block}-{to_block}, ✅ no data extracted"
                 )
             elif len(data) >= 10_000:
@@ -588,14 +588,14 @@ class EtherscanExtractor:
                 combined_lf = pl.concat([existing_lf, new_lf]).unique()
                 combined_lf.collect().write_parquet(output_path)
 
-                logger.debug(
+                logger.info(
                     f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved to existing parquet file"
                 )
 
             else:
                 # Write new file
                 new_lf.collect().write_parquet(output_path)
-                logger.debug(
+                logger.info(
                     f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved to new parquet file"
                 )
 

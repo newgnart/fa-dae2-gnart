@@ -79,6 +79,7 @@ def extract_with_retry(
     to_block: int,
     output_dir: Path,
     max_retries: int = 3,
+    logging_level: str = "WARNING",
 ):
     """Extract logs or transactions with automatic retry on failures.
 
@@ -95,7 +96,9 @@ def extract_with_retry(
     output_path = (
         output_dir / f"{chain}_{address}_{table}_{from_block}_{to_block}.parquet"
     )
-    setup_logging(log_filename=f"extract_{chain}_{address}_{table}.log")
+    setup_logging(
+        log_filename=f"extract_{chain}_{address}_{table}.log", level=logging_level
+    )
 
     etherscan_to_parquet(
         address=address,
@@ -131,8 +134,13 @@ def retry_failed_blocks(error_file: Path, table: str, output_path: Path):
     resolved_dir.mkdir(parents=True, exist_ok=True)
     # Generate resolved filename by adding timestamp
     resolved_file_path = resolved_dir / f"{error_file.stem}_resolved.csv"
-    # Save resolved error file
-    df.to_csv(resolved_file_path, index=False)
+    # Save resolved error file, appending if file exists
+    df.to_csv(
+        resolved_file_path,
+        mode="a",
+        header=not resolved_file_path.exists(),
+        index=False,
+    )
     os.remove(error_file)
 
     for _, row in df.iterrows():
@@ -194,10 +202,26 @@ def main():
         default=".data/etherscan_raw",
         help="Output directory",
     )
+    parser.add_argument(
+        "--v",
+        action="store_true",
+        help="Verbose logging (INFO)",
+    )
+    parser.add_argument(
+        "--vv",
+        action="store_true",
+        help="Very verbose logging (DEBUG)",
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    logging_level = "WARNING"
+    if args.v:
+        logging_level = "INFO"
+    elif args.vv:
+        logging_level = "DEBUG"
 
     etherscan_client = EtherscanClient(chain=args.chain)
     from_block = args.from_block or etherscan_client.get_contract_creation_block_number(
@@ -214,6 +238,7 @@ def main():
             from_block=from_block,
             to_block=to_block,
             output_dir=output_dir,
+            logging_level=logging_level,
         )
 
     if args.transactions:
@@ -225,6 +250,7 @@ def main():
             from_block=from_block,
             to_block=to_block,
             output_dir=output_dir,
+            logging_level=logging_level,
         )
 
 
