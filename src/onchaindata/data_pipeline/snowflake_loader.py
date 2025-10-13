@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
+import os, json
 
-import os
+import polars as pl
 import dlt
 from dlt.sources.filesystem import filesystem, read_parquet
-import polars as pl
-import json
+
 from ..utils import SnowflakeClient
 
 
@@ -12,7 +11,7 @@ def load_parquet_to_snowflake(
     file_path: str,
     table_name: str,
     snowflake_client: SnowflakeClient,
-    schema_name: str = os.getenv("SNOWFLAKE_SCHEMA"),
+    schema: str,
     write_disposition: str = "append",
 ):
     """Load parquet file to Snowflake using DLT filesystem source."""
@@ -30,7 +29,7 @@ def load_parquet_to_snowflake(
     pipeline = dlt.pipeline(
         pipeline_name="parquet_loader",
         destination=snowflake_client.get_dlt_destination(),
-        dataset_name=schema_name,
+        dataset_name=schema,
     )
 
     # Load data
@@ -46,7 +45,7 @@ def load_parquet_to_snowflake_wo_dlt(
     file_path: str,
     table_name: str,
     snowflake_client: SnowflakeClient,
-    schema_name: str = os.getenv("SNOWFLAKE_SCHEMA"),
+    schema: str,
 ):
     # Read parquet file
     df = pl.read_parquet(file_path).head(100)
@@ -78,7 +77,7 @@ def load_parquet_to_snowflake_wo_dlt(
             # Create INSERT statement
             columns = df.columns
             placeholders = ", ".join(["?"] * len(columns))
-            insert_sql = f"INSERT INTO {schema_name}.logs_test ({', '.join(columns)}) VALUES ({placeholders})"
+            insert_sql = f"INSERT INTO {schema}.logs_test ({', '.join(columns)}) VALUES ({placeholders})"
 
             # Insert data row by row
             for row in df.iter_rows():
@@ -118,7 +117,7 @@ def load_parquet_via_stage(
     table_name: str,
     stage_name: str,
     snowflake_client: SnowflakeClient,
-    schema_name: str = os.getenv("SNOWFLAKE_SCHEMA") or "FA02_STAGING",
+    schema: str,
 ):
     """Load parquet file to Snowflake via internal stage."""
 
@@ -134,7 +133,7 @@ def load_parquet_via_stage(
             with conn.cursor() as cur:
                 # COPY command to load from stage
                 copy_sql = f"""
-                COPY INTO {schema_name}.{table_name}
+                COPY INTO {schema}.{table_name}
                 FROM @{stage_name}/{filename}
                 FILE_FORMAT = (TYPE = 'PARQUET')
                 """
@@ -148,16 +147,3 @@ def load_parquet_via_stage(
     except Exception as e:
         print(f"❌ COPY command failed: {e}")
         raise
-
-
-if __name__ == "__main__":
-    load_parquet_to_snowflake(
-        file_path=".data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/logs_sample.parquet",
-        table_name="logs_sample",
-        snowflake_client=SnowflakeClient(),
-    )
-    # load_parquet_to_snowflake(
-    #     file_path=".data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/transactions.parquet",
-    #     table_name="transactions",
-    #     snowflake_client=SnowflakeClient(),
-    # )

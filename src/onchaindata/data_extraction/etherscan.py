@@ -418,8 +418,6 @@ class EtherscanExtractor:
 
     Example:
         extractor = EtherscanExtractor(etherscan_client)
-
-
     """
 
     def __init__(

@@ -46,7 +46,7 @@ def load_parquet_to_postgres_wo_dlt(
     file_path: str,
     table_name: str,
     postgres_client: PostgresClient,
-    schema_name: str = os.getenv("DB_SCHEMA"),
+    schema_name: str,
 ):
     # Read parquet file
     df = pl.read_parquet(file_path).head(100)
@@ -97,16 +97,3 @@ def load_parquet_to_postgres_wo_dlt(
             conn.commit()
 
     return len(df)
-
-
-if __name__ == "__main__":
-    load_parquet_to_postgres(
-        file_path=".data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/logs.parquet",
-        table_name="logs",
-        postgres_client=PostgresClient.from_env(),
-    )
-    load_parquet_to_postgres(
-        file_path=".data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/transactions.parquet",
-        table_name="transactions",
-        postgres_client=PostgresClient.from_env(),
-    )
