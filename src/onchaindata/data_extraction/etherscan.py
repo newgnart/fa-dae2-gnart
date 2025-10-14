@@ -302,6 +302,16 @@ class EtherscanClient(BaseAPIClient):
             json.dump(receipt, f, indent=2)
         pass  # Receipt saved
 
+    def get_block_number_by_timestamp(self, timestamp: int) -> int:
+        """Get block number by timestamp."""
+        params = {
+            "module": "block",
+            "action": "getblocknobytime",
+            "timestamp": timestamp,
+            "closest": "before",
+        }
+        return int(self.make_request("", params))
+
 
 class EtherscanSource(BaseSource):
     """Creating DLT source for Etherscan data."""
@@ -432,7 +442,7 @@ class EtherscanExtractor:
         from_block: int,
         to_block: str,
         chain: str,
-        table: Literal["logs", "transactions"],
+        table: str,
         output_path: Path,
         offset: int = 1000,
     ):
@@ -442,7 +452,7 @@ class EtherscanExtractor:
         Args:
             address: Contract address to extract data for
             chain: Blockchain network (default: "ethereum")
-            table: Type of data to extract ("logs" or "transactions")
+            table: logs, transactions
             from_block: Starting block number
             to_block: Ending block number or "latest"
             offset: Number of records per API call
@@ -569,7 +579,7 @@ class EtherscanExtractor:
         data: List[Dict[str, Any]],
         output_path: Path,
     ) -> str:
-        """Save data to Parquet file organized by chain/table/address."""
+        """Save data to Parquet file organized by chain_address_table_from_block_to_block."""
         try:
             # Create Polars DataFrame
             new_lf = pl.LazyFrame(data)
@@ -587,14 +597,14 @@ class EtherscanExtractor:
                 combined_lf.collect().write_parquet(output_path)
 
                 logger.info(
-                    f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved to existing parquet file"
+                    f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved"
                 )
 
             else:
                 # Write new file
                 new_lf.collect().write_parquet(output_path)
                 logger.info(
-                    f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved to new parquet file"
+                    f"{chain} - {address} - {table} - {from_block}-{to_block}: {len(data)} saved"
                 )
 
             return output_path
@@ -610,8 +620,8 @@ def etherscan_to_parquet(
     from_block: int,
     to_block: int,
     output_path: Path,
-    block_chunk_size: int = 50_000,
-    table: Literal["logs", "transactions"] = "logs",
+    table,
+    block_chunk_size: int = 10_000,
 ) -> Path:
     """Backfill blockchain data from Etherscan to protocol-grouped Parquet files in chunks.
 
@@ -626,7 +636,7 @@ def etherscan_to_parquet(
         to_block: Ending block number (uses latest block if None)
         block_chunk_size: Number of blocks to process per chunk (default: 50,000)
         data_dir: Path for parquet file output
-        table: Whether to extract event logs or transactions (default: "logs")
+        table: logs, transactions
     Returns:
         Path to the parquet file
     """
@@ -636,6 +646,11 @@ def etherscan_to_parquet(
     chain = etherscan_client.chain
 
     end_block = to_block
+
+    assert from_block < to_block, "from_block must be less than to_block"
+    assert (
+        block_chunk_size < to_block - from_block
+    ), "block_chunk_size must be less than to_block - from_block"
 
     for chunk_start in range(
         from_block, end_block - block_chunk_size + 1, block_chunk_size
@@ -648,6 +663,16 @@ def etherscan_to_parquet(
             table=table,
             from_block=chunk_start,
             to_block=chunk_end,
+            offset=1000,
+            output_path=output_path,
+        )
+    if chunk_end < end_block:
+        extractor.to_parquet(
+            address=address,
+            chain=chain,
+            table=table,
+            from_block=chunk_end,
+            to_block=end_block,
             offset=1000,
             output_path=output_path,
         )

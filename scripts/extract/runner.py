@@ -1,4 +1,5 @@
 import json, argparse, logging, os
+from datetime import datetime, timedelta, timezone
 import logging.handlers
 
 from pathlib import Path
@@ -79,7 +80,6 @@ def extract_with_retry(
     to_block: int,
     output_dir: Path,
     max_retries: int = 3,
-    logging_level: str = "WARNING",
 ):
     """Extract logs or transactions with automatic retry on failures.
 
@@ -96,10 +96,6 @@ def extract_with_retry(
     output_path = (
         output_dir / f"{chain}_{address}_{table}_{from_block}_{to_block}.parquet"
     )
-    setup_logging(
-        log_filename=f"extract_{chain}_{address}_{table}.log", level=logging_level
-    )
-
     etherscan_to_parquet(
         address=address,
         etherscan_client=etherscan_client,
@@ -107,6 +103,7 @@ def extract_with_retry(
         from_block=from_block,
         to_block=to_block,
         output_path=output_path,
+        block_chunk_size=5_000,
     )
 
     # Retry failed blocks if error file exists
@@ -121,7 +118,19 @@ def extract_with_retry(
         )
         retries += 1
     n = pl.scan_parquet(output_path).select(pl.len()).collect().item()
-    logger.info(f"{chain} - {address} - {table} - {from_block}-{to_block}, {n} ✅")
+    min_block = (
+        pl.scan_parquet(output_path)
+        .select(pl.col("blockNumber").min())
+        .collect()
+        .item()
+    )
+    max_block = (
+        pl.scan_parquet(output_path)
+        .select(pl.col("blockNumber").max())
+        .collect()
+        .item()
+    )
+    logger.info(f"{chain} - {address} - {table} - {min_block}-{max_block}, {n} ✅")
 
 
 def retry_failed_blocks(error_file: Path, table: str, output_path: Path):
@@ -163,18 +172,51 @@ def retry_failed_blocks(error_file: Path, table: str, output_path: Path):
         )
 
 
+def rename_parquet_file(file_path: Path, **kwargs):
+    """
+    To rename the parquet file to the actual blocks range of the data
+    Args:
+        file_path: Path to the parquet file
+    """
+    min_block = (
+        pl.scan_parquet(file_path).select(pl.col("blockNumber").min()).collect().item()
+    )
+    max_block = (
+        pl.scan_parquet(file_path).select(pl.col("blockNumber").max()).collect().item()
+    )
+    new_file_path = file_path.with_name(
+        f"{file_path.stem}_{min_block}_{max_block}.parquet"
+    )
+    new_file_path = (
+        file_path.parent
+        / f"{kwargs['chain']}_{kwargs['address'].lower()}_{kwargs['table']}_{min_block}_{max_block}.parquet"
+    )
+
+    if file_path != new_file_path:
+        file_path.rename(new_file_path)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-c",
         "--chain",
         type=str,
         default="ethereum",
         help="Chain name",
     )
     parser.add_argument(
+        "-a",
         "--address",
         type=str,
         help="Address",
+    )
+    parser.add_argument(
+        "-d",
+        "--last_n_days",
+        type=int,
+        default=7,
+        help="Extract data from the last N days",
     )
     parser.add_argument(
         "--from_block",
@@ -197,18 +239,19 @@ def main():
         help="Extract transactions",
     )
     parser.add_argument(
+        "-o",
         "--output_dir",
         type=str,
-        default=".data/etherscan_raw",
+        default=".data/raw",
         help="Output directory",
     )
     parser.add_argument(
-        "--v",
+        "-v",
         action="store_true",
         help="Verbose logging (INFO)",
     )
     parser.add_argument(
-        "--vv",
+        "-vv",
         action="store_true",
         help="Very verbose logging (DEBUG)",
     )
@@ -218,16 +261,27 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logging_level = "WARNING"
-    if args.v:
-        logging_level = "INFO"
-    elif args.vv:
+    if args.vv:
         logging_level = "DEBUG"
+    elif args.v:
+        logging_level = "INFO"
+    setup_logging(log_filename="extraction.log", level=logging_level)
 
     etherscan_client = EtherscanClient(chain=args.chain)
-    from_block = args.from_block or etherscan_client.get_contract_creation_block_number(
-        args.address
-    )
-    to_block = args.to_block or etherscan_client.get_latest_block()
+
+    if args.last_n_days:
+
+        from_timestamp = int(
+            (datetime.now(timezone.utc) - timedelta(days=args.last_n_days)).timestamp()
+        )
+        from_block = etherscan_client.get_block_number_by_timestamp(from_timestamp)
+        to_block = etherscan_client.get_latest_block()
+    else:
+        from_block = (
+            args.from_block
+            or etherscan_client.get_contract_creation_block_number(args.address)
+        )
+        to_block = args.to_block or etherscan_client.get_latest_block()
 
     if args.logs:
         extract_with_retry(
@@ -238,9 +292,14 @@ def main():
             from_block=from_block,
             to_block=to_block,
             output_dir=output_dir,
-            logging_level=logging_level,
         )
-
+        file_path = (
+            output_dir
+            / f"{args.chain}_{args.address.lower()}_logs_{from_block}_{to_block}.parquet"
+        )
+        rename_parquet_file(
+            file_path, chain=args.chain, address=args.address, table="logs"
+        )
     if args.transactions:
         extract_with_retry(
             address=args.address.lower(),
@@ -250,7 +309,13 @@ def main():
             from_block=from_block,
             to_block=to_block,
             output_dir=output_dir,
-            logging_level=logging_level,
+        )
+        file_path = (
+            output_dir
+            / f"{args.chain}_{args.address.lower()}_transactions_{from_block}_{to_block}.parquet"
+        )
+        rename_parquet_file(
+            file_path, chain=args.chain, address=args.address, table="transactions"
         )
 
 

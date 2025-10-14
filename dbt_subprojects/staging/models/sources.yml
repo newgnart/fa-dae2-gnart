@@ -1,0 +1,34 @@
+version: 1
+
+sources:
+  - name: etherscan_raw
+    description: "Raw data from Etherscan"
+    schema: raw
+    tables:
+      - name: logs
+        description: "Raw log data"
+        columns:
+          - name: address
+            description: "Contract address that emitted the log"
+            tests:
+              - not_null
+          - name: topics
+            description: "JSON array of topics"
+            tests:
+              - not_null
+          - name: data
+            description: "Encoded log data"
+          - name: block_number
+            tests:
+              - not_null
+          - name: block_hash
+          - name: time_stamp
+            description: "Unix timestamp of the block"
+          - name: gas_price
+          - name: gas_used
+          - name: log_index
+            description: "Index of log within the transaction"
+          - name: transaction_hash
+            tests:
+              - not_null
+          - name: transaction_index

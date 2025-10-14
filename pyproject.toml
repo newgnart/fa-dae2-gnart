@@ -5,6 +5,8 @@ description = "Capstone project package for FA DAE2"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "dbt-core>=1.10.13",
+    "dbt-postgres>=1.9.1",
     "dlt>=1.17.0",
     "jupyter>=1.1.1",
     "pandas>=2.3.3",

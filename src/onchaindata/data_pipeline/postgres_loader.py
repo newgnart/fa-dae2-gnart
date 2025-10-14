@@ -10,9 +10,9 @@ from ..utils import PostgresClient
 
 def load_parquet_to_postgres(
     file_path: str,
-    table_name: str,
     postgres_client: PostgresClient,
-    schema_name: str = os.getenv("DB_SCHEMA"),
+    schema: str,
+    table: str,
     write_disposition: str = "append",
 ):
     """Load parquet file to PostgreSQL using DLT filesystem source."""
@@ -21,7 +21,7 @@ def load_parquet_to_postgres(
     fs_source = filesystem(bucket_url=".", file_glob=file_path)
 
     parquet_resource = fs_source | read_parquet()
-    if table_name == "logs":
+    if table == "logs":
         parquet_resource.apply_hints(
             columns={"topics": {"data_type": "json", "nullable": True}}
         )
@@ -30,13 +30,13 @@ def load_parquet_to_postgres(
     pipeline = dlt.pipeline(
         pipeline_name="parquet_loader",
         destination=postgres_client.get_dlt_destination(),
-        dataset_name=schema_name,
+        dataset_name=schema,
     )
 
     # Load data
     result = pipeline.run(
         parquet_resource,
-        table_name=table_name,
+        table_name=table,
         write_disposition=write_disposition,
     )
     return result
@@ -44,9 +44,9 @@ def load_parquet_to_postgres(
 
 def load_parquet_to_postgres_wo_dlt(
     file_path: str,
-    table_name: str,
     postgres_client: PostgresClient,
-    schema_name: str,
+    schema: str,
+    table: str,
 ):
     # Read parquet file
     df = pl.read_parquet(file_path).head(100)
@@ -62,7 +62,7 @@ def load_parquet_to_postgres_wo_dlt(
             "transactionIndex": "transaction_index",
             "logIndex": "log_index",
         },
-        "transactions": {
+        "txns": {
             "blockNumber": "block_number",
             "blockHash": "block_hash",
             "timeStamp": "time_stamp",
@@ -70,7 +70,7 @@ def load_parquet_to_postgres_wo_dlt(
         },
     }
 
-    df = df.rename(column_name_mapping[table_name])
+    df = df.rename(column_name_mapping[table])
 
     # Get connection and insert data
     with postgres_client.get_connection() as conn:
@@ -78,7 +78,7 @@ def load_parquet_to_postgres_wo_dlt(
             # Create INSERT statement
             columns = df.columns
             placeholders = ", ".join(["%s"] * len(columns))
-            insert_sql = f"INSERT INTO {schema_name}.logs_test ({', '.join(columns)}) VALUES ({placeholders})"
+            insert_sql = f"INSERT INTO {schema}.{table} ({', '.join(columns)}) VALUES ({placeholders})"
 
             # Insert data row by row
             for row in df.iter_rows():
@@ -95,5 +95,3 @@ def load_parquet_to_postgres_wo_dlt(
                 cur.execute(insert_sql, tuple(row_values))
 
             conn.commit()
-
-    return len(df)

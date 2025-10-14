@@ -1,0 +1,27 @@
+version: 1
+
+models:
+  - name: logs_decoded
+    description: "Decoded logs data with parsed event_name"
+    columns:
+      - name: contract_address
+        description: "Contract address that emitted the log"
+        tests:
+          - not_null
+      - name: block_number
+        description: "Block number where event occurred"
+        tests:
+          - not_null
+      - name: block_time
+      - name: transaction_hash
+        description: "Hash of the transaction"
+        tests:
+          - not_null
+      - name: log_index
+        description: "Index of log within the transaction"
+      - name: event_name
+        description: "Name of the decoded event"
+      - name: event_signature
+        description: "Event signature (topic0)"
+      - name: data
+        description: "Decoded event parameters as JSON"
