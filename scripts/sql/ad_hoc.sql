@@ -1,3 +1,3 @@
-DROP TABLE IF EXISTS fa02_staging.transactions;
+DROP TABLE IF EXISTS staging.decoded_logs;
 
-DROP SCHEMA IF EXISTS songan, songan_test, staging CASCADE;
+DROP SCHEMA IF EXISTS staging_test CASCADE;
