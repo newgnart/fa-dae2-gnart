@@ -3,4 +3,4 @@ Inspired by [Visa on Chain Analytics](https://visaonchainanalytics.com/) which s
 - Key Metrics: Stablecoin Supply, Transactions Volume, Transaction Count, Addresses
 - Stablecoins: USDC, USDT, PYUSD, FDUSD, USDP and USDG on several blockchains
 
-This project is built to track decentralized stablecoins (crvUSD, GHO, frxUSD) usages on Ethereum.
+This project is built to track decentralized stablecoins usages on Ethereum.

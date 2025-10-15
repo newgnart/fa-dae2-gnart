@@ -10,6 +10,7 @@
   ```bash
   uv run scripts/extract/runner.py --address 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E --from_block 18.4M --to_block 18.5M --logs
   ```
+  - 
 
 - File naming convention: `{blockchain}_{contract_address}_{table_name}_{from_block}_{to_block}.parquet` where:
   - `blockchain`: name of the blockchain, e.g. `ethereum`
@@ -21,7 +22,9 @@
 
 ### Batch pipeline to local Postgres
 
+uv run scripts/el/load.py -f sampledata/transactions_tiny.parquet -c postgres -s raw_tiny -t logs
 ### Batch pipeline to Snowflake
+ uv run scripts/el/load.py -f sampledata/transactions_tiny.parquet -c snowflake -s raw_tiny -t logs
 
 ## Streaming data with real-time pipeline
 
