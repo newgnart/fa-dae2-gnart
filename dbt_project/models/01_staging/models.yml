@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: stg_logs_decoded
+    description: "Decoded logs data with parsed topics"
+    columns:
+      - name: contract_address
+        description: "Contract address that emitted the log"
+        tests:
+          - not_null
+      - name: block_number
+        description: "Block number where event occurred"
+        tests:
+          - not_null
+      - name: block_time
+        description: "Timestamp of the block"
+      - name: transaction_hash
+        description: "Hash of the transaction"
+        tests:
+          - not_null
+      - name: index
+        description: "Index of log within the transaction"
+      - name: topic0
+        description: "Event signature (topic0)"
+      - name: topic1
+        description: "First indexed parameter"
+      - name: topic2
+        description: "Second indexed parameter"
+      - name: topic3
+        description: "Third indexed parameter"
+      - name: data
+        description: "Encoded event parameters"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          config:
+            severity: warn
+          combination_of_columns:
+            - contract_address
+            - transaction_hash
+            - index

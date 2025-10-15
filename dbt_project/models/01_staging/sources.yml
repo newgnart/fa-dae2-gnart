@@ -1,12 +1,12 @@
-version: 1
+version: 2
 
 sources:
   - name: etherscan_raw
-    description: "Raw data from Etherscan"
+    description: "Raw data from Etherscan API"
     schema: raw
     tables:
       - name: logs
-        description: "Raw log data"
+        description: "Raw log data from smart contracts"
         columns:
           - name: address
             description: "Contract address that emitted the log"

@@ -4,105 +4,183 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a capstone project for FA DAE2 focused on GHRSST (Group for High Resolution Sea Surface Temperature) data retrieval and processing. The project uses NASA Harmony API to download satellite sea surface temperature data around Vietnam and stores it in a PostgreSQL database.
+This is a capstone project for FA DAE2 focused on Ethereum blockchain data extraction and transformation. The project extracts smart contract logs and transactions from Etherscan API, loads them into PostgreSQL, and transforms them using dbt.
 
 ## Architecture
 
-The project consists of several key components:
+The project follows an ELT (Extract, Load, Transform) pipeline:
 
-### GHRSST Data Retrieval (`scripts/ghrsst_downloader.py`)
-- Downloads GHRSST data via NASA Harmony API using the harmony-py client
-- Supports multiple processing levels: L2P (swath), L3S (daily gridded), L4 (gap-free daily)
-- Default region: Vietnam (lat 8–22N, lon 102–112E)
-- Requires EDL_TOKEN environment variable for NASA Earthdata authentication
-- Downloads data to `./outputs/<job_id>/` directory
+### 1. Extract Layer (`scripts/extract/`)
+- **Primary script**: `runner.py` - Extracts logs and transactions from Etherscan API
+- Uses the `onchaindata.data_extraction.etherscan` module
+- Supports multiple blockchain networks via `EtherscanClient`
+- Features automatic retry logic for failed block ranges with exponential backoff
+- Data stored as Parquet files in `.data/raw/` directory
+- Error tracking in `logging/extract_error/` with automatic retry mechanism
 
-### Database Layer
-- PostgreSQL database with staging schema
-- Connection utilities in `scripts/database/`
-- Uses psycopg for database connectivity
-- Staging table: `staging.raw_data` with columns for data_content, file_name, loaded_at
+### 2. Load Layer (`scripts/load/`)
+- **postgres_load.py**: Loads Parquet files into PostgreSQL `raw` schema
+- **snowflake_load.py**: Optional Snowflake loading capabilities
+- Uses `onchaindata.data_pipeline` module for loading operations
+- Supports both dlt-based and direct psycopg-based loading
 
-### Infrastructure
-- Docker Compose setup for PostgreSQL container
-- Uses external Kafka network: `fa-dae2-capstone_kafka_network`
-- Environment-based configuration via `.env` file
+### 3. Transform Layer (dbt)
+- **Location**: `dbt_project/`
+- Standard dbt project structure with models organized by layer:
+  - `models/staging/`: Raw data cleanup (e.g., `stg_logs_decoded`)
+  - `models/intermediate/`: Business logic transformations
+  - `models/marts/`: Final analytics tables
+- Shared macros in `dbt_project/macros/` for Ethereum data type conversions:
+  - `uint256_to_address`: Extracts Ethereum addresses from uint256 hex strings
+  - `uint256_to_numeric`: Converts uint256 hex to numeric values
+- Models reference source data from `raw` schema
+- Configuration: [dbt_project.yml](dbt_project/dbt_project.yml), [profiles.yml](dbt_project/profiles.yml)
+
+### 4. Package Structure (`src/onchaindata/`)
+Reusable Python package with modules:
+- `data_extraction/`: Etherscan API client with rate limiting
+- `data_pipeline/`: Postgres and Snowflake loading utilities
+- `utils/`: Database clients (PostgresClient, SnowflakeClient)
+- `config/`: Configuration management
 
 ## Development Commands
 
 ### Environment Setup
 ```bash
-# Install dependencies using uv
-uv sync
+# Create Docker network (first time only)
+docker network create fa-dae2-capstone_kafka_network
 
 # Start PostgreSQL container
 docker-compose up -d
 
-# Test database connection
-python scripts/database/connection_test.py
+# Install dependencies using uv
+uv sync
 
-# Run CRUD demo
-python scripts/database/crud_demo.py
+# Set up environment variables
+cp .env.example .env
+export $(cat .env | xargs)
+
+# Initialize database schema
+./scripts/sql/run_sql.sh ./scripts/sql/init.sql
 ```
 
-### GHRSST Data Operations
+### Data Extraction
 ```bash
-# Download L3S data (default)
-EDL_TOKEN=your_token python scripts/ghrsst_downloader.py --level L3S
+# Extract logs and transactions for a specific contract address
+# Supports K/M/B suffixes for block numbers (e.g., '18.5M')
+uv run python scripts/extract/runner.py \
+  -c ethereum \
+  -a 0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72 \
+  --logs --transactions \
+  --from_block 18.5M --to_block 20M \
+  -v  # verbose logging
 
-# Download L2P data with custom parameters
-EDL_TOKEN=your_token python scripts/ghrsst_downloader.py --level L2P --bbox 7 23 100 114 --max-results 8
+# Extract data from last N days
+uv run python scripts/extract/runner.py \
+  -a 0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72 \
+  --logs --transactions \
+  --last_n_days 7
 
-# Download L4 data for specific date
-EDL_TOKEN=your_token python scripts/ghrsst_downloader.py --level L4 --date 2025-09-12
+# Logging levels: no flag (WARNING), -v (INFO), -vv (DEBUG)
 ```
 
-### Database Operations
+### Data Loading
 ```bash
-# Test connection to staging database
-python scripts/database/connection_test.py
+# Load Parquet file to PostgreSQL
+uv run python scripts/load/postgres_load.py \
+  -f .data/raw/ethereum_0xaddress_logs_18500000_20000000.parquet \
+  -t logs
 
-# Demonstrate CRUD operations
-python scripts/database/crud_demo.py
+# Load to Snowflake (requires SNOWFLAKE_* env vars)
+uv run python scripts/load/snowflake_load.py
+```
+
+### dbt Operations
+```bash
+# Run dbt models
+./scripts/dbt.sh run
+
+# Run specific model
+./scripts/dbt.sh run --select stg_logs_decoded
+
+# Run tests
+./scripts/dbt.sh test
+
+# Other dbt commands
+./scripts/dbt.sh compile                    # Compile models
+./scripts/dbt.sh docs generate              # Generate documentation
+./scripts/dbt.sh run --select staging.*     # Run all staging models
+./scripts/dbt.sh deps                       # Install dbt packages
+
+# Legacy script (still available for backward compatibility)
+./scripts/run_dbt.sh staging run
+```
+
+### SQL Operations
+```bash
+# Run SQL scripts directly
+./scripts/sql/run_sql.sh ./scripts/sql/init.sql
+
+# Ad-hoc queries
+./scripts/sql/run_sql.sh ./scripts/sql/ad_hoc.sql
 ```
 
 ## Environment Variables
 
-Required environment variables (see `.env.example`):
-- `EDL_TOKEN`: NASA Earthdata Login token for API access
-- `POSTGRES_HOST`: Database host (default: localhost)
-- `POSTGRES_PORT`: Database port (default: 5432)
-- `POSTGRES_DB`: Database name (default: postgres)
-- `POSTGRES_USER`: Database user (default: postgres)
-- `POSTGRES_PASSWORD`: Database password (default: postgres)
+Required variables (see `.env.example`):
+- `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `DB_SCHEMA`: Default schema for operations (e.g., `fa02_staging`)
+- `KAFKA_NETWORK_NAME`: Docker network name
 
-## Key Dependencies
+Optional (for Snowflake):
+- `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`
+- `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`, `SNOWFLAKE_PRIVATE_KEY_FILE_PATH`
 
-- `harmony-py`: NASA Harmony API client for GHRSST data
-- `psycopg`: PostgreSQL adapter for Python
-- `python-dotenv`: Environment variable management
-- `jupyter`: For notebook-based development
+## Key Data Flows
+
+1. **Etherscan → Parquet**: `runner.py` extracts blockchain data to `.data/raw/*.parquet`
+2. **Parquet → PostgreSQL**: `postgres_load.py` loads into `raw` schema tables
+3. **PostgreSQL → dbt**: dbt models transform `raw.logs` → `staging.stg_logs_decoded`
+4. Failed extractions are logged to `logging/extract_error/` and automatically retried with smaller chunk sizes
+
+## dbt Project Structure
+
+```
+dbt_project/
+├── dbt_project.yml          # Configuration
+├── profiles.yml             # Database connections
+├── models/
+│   ├── staging/            # Raw data cleanup
+│   │   ├── _staging__sources.yml
+│   │   ├── _staging__models.yml
+│   │   └── stg_logs_decoded.sql
+│   ├── intermediate/       # Business logic transformations
+│   └── marts/              # Final analytics tables
+├── tests/                  # Data quality tests
+│   ├── test_valid_address.sql
+│   └── test_block_number_range.sql
+├── macros/                 # Reusable SQL (ethereum_macros.sql)
+└── packages.yml            # dbt dependencies (dbt_utils)
+```
+
+### Model Naming Conventions
+- **Staging models**: `stg_<source>_<entity>.sql` (e.g., `stg_logs_decoded.sql`)
+- **Intermediate models**: `int_<entity>_<verb>.sql` (e.g., `int_logs_filtered.sql`)
+- **Fact tables**: `fct_<entity>.sql` (e.g., `fct_transfers.sql`)
+- **Dimension tables**: `dim_<entity>.sql` (e.g., `dim_contracts.sql`)
 
 ## Database Schema
 
-The staging schema contains:
-- `staging.raw_data`: Main table for storing downloaded GHRSST data files
-  - `id`: Primary key
-  - `data_content`: File content/metadata
-  - `file_name`: Original filename
-  - `loaded_at`: Timestamp of data insertion
+- **raw.logs**: Raw log data with columns: address, topics (JSONB), data, block_number, transaction_hash, etc.
+- **raw.transactions**: Transaction data (structure similar to logs)
+- **staging.stg_logs_decoded**: Decoded logs with parsed topics (topic0-topic3)
+- dbt creates additional staging/intermediate/mart tables based on models in `dbt_project/models/`
 
-## Known Data Collections
+## Project Structure Notes
 
-The project uses these NASA CMR concept IDs:
-- L2P: `C2208421671-POCLOUD` (Himawari AHI GHRSST swath)
-- L3S: `C2805339147-POCLOUD` (NOAA/STAR ACSPO L3S Daily 0.02°)
-- L4: `C1996881146-POCLOUD` (JPL MUR L4 Global 0.01° Daily)
-
-## Documentation
-
-### API Documentation
-- [NASA Harmony API](https://harmony.earthdata.nasa.gov/docs)
-
-### GHRSST Data Documentation
-- [GHRSST Project Overview](https://www.ghrsst.org/)
+- Runnable scripts are ONLY in `scripts/` directory
+- Reusable code is packaged in `src/onchaindata/`
+- dbt project located at `dbt_project/` with standard structure (staging → intermediate → marts)
+- Data files: `.data/raw/` for extracted data, `sampledata/` for examples
+- Always run Python scripts with `uv run python` (not direct python)
+- Legacy `dbt_subprojects/` directory retained for reference (can be removed after migration)

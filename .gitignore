@@ -30,7 +30,9 @@ Thumbs.db
 # Misc
 .tmp
 logging/
+TODO.md
 
 # dbt
 target/
 .user.yml
+dbt_packages/

@@ -1,4 +1,5 @@
-staging:
+stablecoins:
+  target: dev
   outputs:
     dev:
       type: postgres
@@ -7,9 +8,8 @@ staging:
       user: "{{ env_var('POSTGRES_USER') }}"
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
       dbname: "{{ env_var('POSTGRES_DB') }}"
-      schema: staging
+      schema: staging # default schema
       threads: 4
-      keepalives_idle: 0 # default 0, indicating the system default
-      connect_timeout: 10 # default 10 seconds
-      sslmode: disable # set the sslmode used to connect to the database
-  target: dev
+      keepalives_idle: 0
+      connect_timeout: 10
+      sslmode: disable
