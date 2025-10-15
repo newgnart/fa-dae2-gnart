@@ -18,20 +18,16 @@ clean-targets: # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 # Configuring models
-# Full documentation: https://docs.getdbt.com/reference/model-configs
 models:
   stablecoins:
-    # Staging models - raw data cleanup
-    01_staging:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: ephemeral
+    marts:
       +materialized: table
-      +schema: staging
-
-    # Intermediate models - transformations
-    # 02_intermediate:
-    #   +materialized: ephemeral
-    #   +schema: intermediate
-
-    # # Mart - final analytics tables
-    # 03_mart:
-    #   +materialized: table
-    #   +schema: marts
+# seeds:
+#   capstone_project:
+#     +column_types:
+#       id: integer
+#       created_at: timestamp

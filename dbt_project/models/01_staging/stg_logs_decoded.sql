@@ -1,6 +1,5 @@
 {{
     config(
-        materialized='table',
         indexes=[
             {'columns': ['contract_address', 'transaction_hash', 'index'], 'type': 'btree'},
         ]

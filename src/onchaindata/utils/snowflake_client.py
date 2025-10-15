@@ -25,7 +25,6 @@ class SnowflakeClient(BaseDatabaseClient):
             "private_key_file": self._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE_PATH"),
             "warehouse": self._get_env_var("SNOWFLAKE_WAREHOUSE"),
             "database": self._get_env_var("SNOWFLAKE_DATABASE"),
-            "schema": self._get_env_var("SNOWFLAKE_SCHEMA"),
             "role": self._get_env_var("SNOWFLAKE_ROLE"),
         }
 
@@ -38,7 +37,6 @@ class SnowflakeClient(BaseDatabaseClient):
     def _create_connection(self):
         """Create a new Snowflake connection."""
         return snowflake.connector.connect(**self.connection_params)
-
 
     @contextmanager
     def cursor(self):
@@ -79,10 +77,10 @@ class SnowflakeClient(BaseDatabaseClient):
 
         # Create credentials object that DLT expects
         credentials = {
-            "database": self.connection_params["database"],
             "username": self.connection_params["user"],
             "host": self.connection_params["account"],
             "warehouse": self.connection_params["warehouse"],
+            "database": self.connection_params["database"],
             "role": self.connection_params["role"],
             "private_key": private_key_data,
         }

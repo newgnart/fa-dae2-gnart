@@ -79,4 +79,13 @@ The entities and their relationships
 ## Transformation
 ### Logs table
 - `topics[0]` is the hash of event signature, so we can use it to get the event name.
+
+
+
+
+## Appendix
+
+- test dbt connection
+  - ./scripts/dbt.sh debug --target test
+  - ./scripts/dbt.sh debug --target dev
 - 
