@@ -51,7 +51,8 @@ def main():
     if args.client == "snowflake":
         client = SnowflakeClient()
     elif args.client == "postgres":
-        client = PostgresClient()
+        client = PostgresClient.from_env()
+        print(client.get_connection_url())
     else:
         raise ValueError(
             f"Invalid client: {args.client}, use 'snowflake' or 'postgres', or implement new client"
