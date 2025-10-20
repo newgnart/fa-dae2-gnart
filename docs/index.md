@@ -1,17 +1,8 @@
-# Welcome to MkDocs
+# Home
+The capstone project for [Foundry AI Academy](https://www.foundry.academy/) Data&AI Engineering program.
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Inspired by [Visa on Chain Analytics](https://visaonchainanalytics.com/) which showcases how fiat-backed stablecoins move via public blockchains globally
+- Key Metrics: Stablecoin Supply, Transactions Volume, Addresses and Lending
+- Stablecoins: USDC, USDT, PYUSD, FDUSD, USDP and USDG on several blockchains
 
-## Commands
-
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
-
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+This project is built as Analytics Platform for decentralized stablecoins usages on Ethereum.
