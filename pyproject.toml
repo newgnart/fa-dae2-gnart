@@ -10,6 +10,7 @@ dependencies = [
     "dbt-snowflake>=1.10.2",
     "dlt>=1.17.0",
     "jupyter>=1.1.1",
+    "mkdocs>=1.6.1",
     "pandas>=2.3.3",
     "polars>=1.33.1",
     "psycopg>=3.2.10",
