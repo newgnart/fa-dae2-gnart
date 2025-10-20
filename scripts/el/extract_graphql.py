@@ -21,17 +21,13 @@ from onchaindata.data_extraction import GraphQLBatch, GraphQLStream
 logger = logging.getLogger(__name__)
 
 
-def batch_mode(args):
+def extract(args):
     """
     Execute batch mode: fetch data once and save to Parquet.
 
     Args:
         args: Parsed command-line arguments
     """
-    # Validate arguments
-    if not args.output:
-        raise ValueError("Batch mode requires --output")
-
     # Load query
     if args.query_file:
         with open(args.query_file, "r") as f:
@@ -41,17 +37,13 @@ def batch_mode(args):
     else:
         raise ValueError("Batch mode requires either --query or --query-file")
 
-    # Parse variables
-    variables = json.loads(args.variables) if args.variables else {}
-
     # Fetch data
     logger.info(f"Fetching from: {args.endpoint}")
     extractor = GraphQLBatch(
         endpoint=args.endpoint,
         query=query,
-        variables=variables,
     )
-    df = extractor.extract_to_dataframe(args.table_name)
+    df = extractor.extract_to_dataframe(args.graphql_table)
 
     if df.is_empty():
         logger.info("No data returned from query")
@@ -60,52 +52,16 @@ def batch_mode(args):
     logger.info(f"Fetched {len(df)} records")
 
     # Save to Parquet
-    output_path = Path(args.output)
+    min_block_number = df["blockNumber"].min()
+    max_block_number = df["blockNumber"].max()
+    output_path = (
+        Path(args.output_dir)
+        / f"{args.file_name}_{min_block_number}_{max_block_number}.parquet"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.write_parquet(output_path)
 
     logger.info(f"Saved to: {output_path}")
-
-
-def stream_mode(args):
-    """
-    Execute streaming mode: continuously poll and push to database.
-
-    Args:
-        args: Parsed command-line arguments
-    """
-    # Validate arguments
-    if not all([args.database_client, args.schema, args.database_table, args.fields]):
-        raise ValueError(
-            "Streaming mode requires --database-client, --schema, --database-table, and --fields"
-        )
-
-    # Parse fields
-    fields = [f.strip() for f in args.fields.split(",")]
-
-    # Initialize database client
-    if args.database_client == "snowflake":
-        client = SnowflakeClient().from_env()
-    elif args.database_client == "postgres":
-        client = PostgresClient.from_env()
-    else:
-        raise ValueError(
-            f"Invalid client: {args.database_client}, use 'snowflake' or 'postgres', or implement new client"
-        )
-
-    loader = Loader(client=client)
-    streamer = GraphQLStream(
-        endpoint=args.endpoint,
-        table_name=args.graphql_table,
-        fields=fields,
-        poll_interval=args.poll_interval,
-    )
-
-    streamer.stream(
-        loader=loader,
-        schema=args.schema,
-        table_name=args.database_table,
-    )
 
 
 def main():
@@ -131,61 +87,29 @@ def main():
         "--query-file",
         type=str,
         help="Path to file containing GraphQL query",
+        default="scripts/el/stables_transfers.graphql",
     )
     parser.add_argument(
         "--graphql-table",
         type=str,
-        required=True,
         help="Name of the table from GraphQL Endpoint, e.g. 'stablesTransfers'",
+        default="stablesTransfers",
     )
 
-    # Streaming mode configuration
+    # Output configuration
     parser.add_argument(
-        "--streaming",
-        action="store_true",
-        help="Enable streaming mode (push to database continuously)",
-    )
-    parser.add_argument(
-        "--poll-interval",
-        type=int,
-        default=5,
-        help="Polling interval in seconds for streaming mode (default: 5)",
-    )
-
-    parser.add_argument(
-        "--fields",
+        "-o",
+        "--output_dir",
         type=str,
-        help="Comma-separated list of fields to fetch (required for streaming mode)",
-        default="id,blockNumber,timestamp,contractAddress,from,to,value",
-    )
-
-    # Database configuration (for streaming mode)
-    parser.add_argument(
-        "-c",
-        "--database-client",
-        type=str,
-        choices=["snowflake", "postgres"],
-        help="Client name (required for streaming mode)",
-    )
-    parser.add_argument(
-        "-s",
-        "--schema",
-        type=str,
-        help="Schema name (required for streaming mode)",
+        default=".data/raw",
+        help="Output directory",
     )
     parser.add_argument(
         "-t",
-        "--database-table",
+        "--file_name",
         type=str,
-        help="Target table name in database (required for streaming mode)",
-    )
-
-    # Batch mode configuration
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        help="Output Parquet file path (for batch mode)",
+        help="File name",
+        default="data.parquet",
     )
 
     # Logging configuration
@@ -213,11 +137,7 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Route to appropriate mode
-    if args.streaming:
-        stream_mode(args)
-    else:
-        batch_mode(args)
+    extract(args)
 
 
 if __name__ == "__main__":
