@@ -63,3 +63,6 @@ nav:
       - Data Modeling: 02_data_pipeline/02_modeling.md
       - Data Transformation: 02_data_pipeline/03_transformation.md
   - Analytics: 03_analytics.md
+  - API Reference: 04_api_reference.md
+  - Configuration: 05_configuration.md
+  - Additional Tools: 06_additional_tools.md

@@ -14,7 +14,7 @@ from ..utils import PostgresClient, SnowflakeClient
 
 
 class Loader:
-    """Unified loader class for loading Parquet files to different destinations."""
+    """Unified loader class for loading data to different destinations."""
 
     def __init__(
         self,

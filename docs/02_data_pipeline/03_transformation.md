@@ -40,4 +40,7 @@ uv run scripts/el/stream_graphql.py \
     - Currently supported databases:
         - PostgreSQL
         - Snowflake
+- Data Schema Reference
+
+## dbt models
 

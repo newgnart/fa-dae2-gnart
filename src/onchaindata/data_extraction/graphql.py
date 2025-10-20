@@ -102,7 +102,6 @@ class GraphQLStream:
             table_name: Name of the table/query to fetch
             fields: List of fields to fetch
             poll_interval: Seconds to wait between polls
-            batch_size: Number of records to fetch per batch
         """
         self.endpoint = endpoint
         self.table_name = table_name
@@ -110,7 +109,7 @@ class GraphQLStream:
         self.poll_interval = poll_interval
         self.last_seen_block_number: Optional[int] = None
 
-    def build_query(self, where_clause: Optional[str] = None) -> str:
+    def _build_query(self, where_clause: Optional[str] = None) -> str:
         """
         Build GraphQL query dynamically.
 
@@ -135,7 +134,7 @@ class GraphQLStream:
         """.strip()
         return query
 
-    def get_last_block_number_from_db(
+    def _get_last_block_number_from_db(
         self, loader: Loader, schema: str, table_name: str
     ) -> Optional[int]:
         """
@@ -151,7 +150,7 @@ class GraphQLStream:
         """
         try:
             # Get database connection from loader's client
-            with loader.client._create_connection() as conn:
+            with loader.client.get_connection() as conn:
                 with conn.cursor() as cur:
                     query = f"""
                     SELECT MAX(block_number)::INTEGER
@@ -177,7 +176,7 @@ class GraphQLStream:
         logger.info(f"Starting streaming mode: {self.endpoint}")
         logger.info(f"Target: {schema}.{table_name}")
 
-        self.last_seen_block_number = self.get_last_block_number_from_db(
+        self.last_seen_block_number = self._get_last_block_number_from_db(
             loader, schema, table_name
         )
         logger.info(f"Last seen block number: {self.last_seen_block_number}")
@@ -199,7 +198,7 @@ class GraphQLStream:
                         f"blockNumber: {{_gt: {self.last_seen_block_number}}}"
                     )
 
-                query = self.build_query(where_clause)
+                query = self._build_query(where_clause)
 
                 extractor = GraphQLBatch(
                     endpoint=self.endpoint,
@@ -209,7 +208,6 @@ class GraphQLStream:
                 # Fetch data
                 df = extractor.extract_to_dataframe(self.table_name)
                 if not df.is_empty():
-
                     records_count = len(df)
                     total_records += records_count
 

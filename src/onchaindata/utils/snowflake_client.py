@@ -10,56 +10,61 @@ from .base_client import BaseDatabaseClient
 class SnowflakeClient(BaseDatabaseClient):
     """Reusable Snowflake client with connection management."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        account: str = None,
+        user: str = None,
+        authenticator: str = None,
+        private_key_file: str = None,
+        warehouse: str = None,
+        database: str = None,
+        role: str = None,
+    ):
         """Initialize Snowflake client with environment configuration."""
+        self.account = account
+        self.user = user
+        self.authenticator = authenticator
+        self.private_key_file = private_key_file
+        self.warehouse = warehouse
+        self.database = database
+        self.role = role
         super().__init__()
+
+    @classmethod
+    def from_env(cls) -> "SnowflakeClient":
+        """Create from environment variables"""
+        return cls(
+            account=cls._get_env_var("SNOWFLAKE_ACCOUNT"),
+            user=cls._get_env_var("SNOWFLAKE_USER"),
+            authenticator=cls._get_env_var("SNOWFLAKE_AUTHENTICATOR"),
+            private_key_file=cls._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE"),
+            warehouse=cls._get_env_var("SNOWFLAKE_WAREHOUSE"),
+            database=cls._get_env_var("SNOWFLAKE_DATABASE"),
+            role=cls._get_env_var("SNOWFLAKE_ROLE"),
+        )
 
     def _build_connection_params(self) -> Dict[str, Any]:
         """Build connection parameters from environment variables."""
-        private_key_pwd = self._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE_PWD")
-
-        params = {
-            "account": self._get_env_var("SNOWFLAKE_ACCOUNT"),
-            "user": self._get_env_var("SNOWFLAKE_USER"),
-            "authenticator": "SNOWFLAKE_JWT",
-            "private_key_file": self._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE_PATH"),
-            "warehouse": self._get_env_var("SNOWFLAKE_WAREHOUSE"),
-            "database": self._get_env_var("SNOWFLAKE_DATABASE"),
-            "role": self._get_env_var("SNOWFLAKE_ROLE"),
+        return {
+            "account": self.account,
+            "user": self.user,
+            "authenticator": self.authenticator,
+            "private_key_file": self.private_key_file,
+            "warehouse": self.warehouse,
+            "database": self.database,
+            "role": self.role,
         }
 
-        # Only include password if it's not empty
-        if private_key_pwd and private_key_pwd.strip():
-            params["private_key_file_pwd"] = private_key_pwd
-
-        return params
-
-    def _create_connection(self):
-        """Create a new Snowflake connection."""
-        return snowflake.connector.connect(**self.connection_params)
-
     @contextmanager
-    def cursor(self):
-        """Context manager for Snowflake cursor."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            try:
-                yield cursor
-            finally:
-                cursor.close()
-
-    def execute_query(self, query: str, params: Optional[tuple] = None):
-        """Execute a single query and return results."""
-        return self.fetch_all(query, params)
-
-    def execute_command(self, command: str, params: Optional[tuple] = None) -> bool:
-        """Execute a command and return success status."""
+    def get_connection(self):
+        """Context manager for Snowflake connections."""
+        conn = None
         try:
-            self.execute(command, params)
-            return True
-        except Exception as e:
-            print(f"❌ Command failed: {e}")
-            return False
+            conn = snowflake.connector.connect(**self.connection_params)
+            yield conn
+        finally:
+            if conn:
+                conn.close()
 
     def get_dlt_destination(self):
         """Get DLT destination configuration for Snowflake."""

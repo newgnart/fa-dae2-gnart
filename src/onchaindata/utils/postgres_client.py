@@ -1,5 +1,6 @@
 from typing import Optional, Any, Dict
 import os
+from contextlib import contextmanager
 
 import psycopg
 from sqlalchemy import create_engine
@@ -57,32 +58,19 @@ class PostgresClient(BaseDatabaseClient):
             "password": self.password,
         }
 
-    def get_connection_params(self) -> Dict[str, Any]:
-        """Return connection parameters for database clients."""
-        return self.connection_params
-
-    def get_connection_url(self) -> str:
-        """Return connection URL for database clients."""
-        params = self.connection_params
-        return f"postgresql://{params['user']}:{params['password']}@{params['host']}:{params['port']}/{params['dbname']}"
+    @contextmanager
+    def get_connection(self):
+        """Context manager for PostgreSQL connections."""
+        conn = None
+        try:
+            conn = psycopg.connect(**self.connection_params)
+            yield conn
+        finally:
+            if conn:
+                conn.close()
 
     def get_dlt_destination(self) -> Any:
         """Return DLT destination for pipeline operations."""
-        return dlt.destinations.postgres(self.get_connection_url())
-
-    def _create_connection(self):
-        """Create a new PostgreSQL connection."""
-        return psycopg.connect(**self.connection_params)
-
-    @property
-    def sqlalchemy_engine(self):
-        """
-        Get SQLAlchemy engine for pandas operations (cached).
-
-        Returns:
-            sqlalchemy.engine.Engine: SQLAlchemy engine
-        """
-        if self._engine is None:
-            self._engine = create_engine(self.get_connection_url())
-        return self._engine
-
+        params = self.connection_params
+        connection_url = f"postgresql://{params['user']}:{params['password']}@{params['host']}:{params['port']}/{params['dbname']}"
+        return dlt.destinations.postgres(connection_url)
