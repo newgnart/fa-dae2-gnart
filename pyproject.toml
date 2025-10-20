@@ -11,6 +11,7 @@ dependencies = [
     "dlt>=1.17.0",
     "jupyter>=1.1.1",
     "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.22",
     "pandas>=2.3.3",
     "polars>=1.33.1",
     "psycopg>=3.2.10",
