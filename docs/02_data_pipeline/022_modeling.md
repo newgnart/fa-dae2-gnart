@@ -1,9 +1,7 @@
 ## Conceptual Model
 
 ### Entity Relationship Diagram
-<img src="https://github.com/newgnart/fa-dae2-stables-analytics/tree/main/docs/imgs/entities.drawio.svg" alt="Entity Relationship Diagram" width="600">
-
-
+<iframe src="../../assets/erd01.html" frameborder="0" width="70%" height="250px"></iframe>
 
 ### Entity Descriptions and Relationships
 **STABLECOIN**
@@ -21,9 +19,7 @@
 - Wallet or contract address that holds/transacts stablecoins
 - Relationship: Address HOLDS Stablecoin
 
-**LOAN**
-- Lending/borrowing activity involving stablecoins
-- Relationship: Address BORROWS/LENDS Stablecoin
+
 
 
 ## Logical Model

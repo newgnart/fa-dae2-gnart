@@ -1,63 +1,123 @@
-# 1. Set up the environment
+# Ethereum Blockchain Data Analytics Platform
 
-## Postgres with Docker
+Capstone project for [Foundry AI Academy](https://www.foundry.academy/) Data & AI Engineering program. An ELT pipeline for extracting, loading, and transforming Ethereum blockchain data with focus on stablecoin analytics.
 
+Inspired by [Visa on Chain Analytics](https://visaonchainanalytics.com/).
+
+## Quick Start
+
+### Prerequisites
 ```bash
+# Create Docker network
 docker network create fa-dae2-capstone_kafka_network
+
+# Start PostgreSQL
 docker-compose up -d
-```
-## Python environment
-The project structured as a package in `src/capstone_package` directory. Runnable scripts are in `scripts` directory only.
 
-Install dependencies using uv:
-```bash
+# Install dependencies
 uv sync
-```
 
-## Initialize the database
-
-### Set environment variables
-
-- Copy `.env.example` to `.env`
-```bash
+# Setup environment
 cp .env.example .env
-```
-- Set environment variables
-```bash
 export $(cat .env | xargs)
 ```
 
-### The data
-- Log and transaction data of a smart contract [0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72](https://etherscan.io/address/0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72) on Ethereum.
-- Whole loading data in is parquet format
-- Example in json format: 
-  - [logs.json](data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/logs.json)
-  - [transactions.json](data/ethereum_0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72/transactions.json)
-
-### Load data to Postgres
-
-There are two ways to load data to Postgres:
-
-1. Using DLT
-dlt will automatically create the table and load data to it.
+### Extract Data
 ```bash
-python scripts/data_loading/postgres_loader.py
-```
-**Note**: for non-standard data types e.g. json, use [apply_hints](scripts/data_loading/postgres_loader.py#L28) to define the data type.
-
-1. Without DLT, using psycopg to load data.
-
-- Initialize the table manually
-```bash
-./scripts/sql/run_sql.sh ./scripts/sql/init.sql;
+# Extract logs and transactions from Etherscan
+uv run python scripts/el/extract_etherscan.py \
+  -c ethereum \
+  -a 0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72 \
+  --logs --transactions \
+  --from_block 18.5M --to_block 20M \
+  -v
 ```
 
-- Use `load_parquet_to_postgres_wo_dlt` function in [postgres_loader.py](scripts/data_loading/postgres_loader.py)
-
-### Load data to Snowflake
-
-1. raw data stored in `database/RAW_DATA.JSON_STAGE`
-Use `upload_file_to_stage` function in [snowflake_loader.py](scripts/data_loading/snowflake_loader.py) to upload the data to Snowflake.
+### Load Data
 ```bash
-python scripts/data_loading/snowflake_loading.py
+# Load Parquet to PostgreSQL
+uv run python scripts/el/load.py \
+  -f .data/raw/ethereum_0xaddress_logs_18500000_20000000.parquet \
+  -c postgres \
+  -s raw \
+  -t logs \
+  -w append
 ```
+
+### Transform Data
+```bash
+# Run dbt models
+./scripts/dbt.sh run
+
+# Run specific model
+./scripts/dbt.sh run --select stg_logs_decoded
+```
+
+## Architecture
+
+**Extract** → **Load** → **Transform**
+
+1. **Extract** (`scripts/el/extract_etherscan.py`): Pulls blockchain data from Etherscan API to `.data/raw/*.parquet`
+2. **Load** (`scripts/el/load.py`): Loads Parquet files into PostgreSQL/Snowflake `raw` schema
+3. **Transform** (`dbt_project/`): dbt models transform raw data into analytics-ready tables
+
+### Project Structure
+```
+├── scripts/el/              # Extract & Load scripts
+├── src/onchaindata/         # Reusable Python package
+│   ├── data_extraction/     # Etherscan/GraphQL clients
+│   ├── data_pipeline/       # Loader classes
+│   └── utils/              # Database clients
+├── dbt_project/            # dbt transformation layer
+│   ├── models/01_staging/  # Raw data cleanup (views)
+│   ├── models/intermediate/# Business logic (ephemeral)
+│   └── models/marts/       # Analytics tables (tables)
+└── .data/raw/             # Extracted Parquet files
+```
+
+## Key Features
+
+- **Multi-chain support**: Ethereum, Polygon, BSC via chainid mapping
+- **Automatic retry**: Failed extractions retry with smaller chunks (10x reduction)
+- **Flexible loading**: PostgreSQL and Snowflake support
+- **Block number shortcuts**: Use `18.5M` instead of `18500000`
+- **dbt transformations**: Staging → Intermediate → Marts layers
+
+## Environment Variables
+
+Required (see `.env.example`):
+- `POSTGRES_*`: Database connection
+- `ETHERSCAN_API_KEY`: API access
+- `DB_SCHEMA`: Default schema
+
+Optional (for Snowflake):
+- `SNOWFLAKE_*`: Snowflake connection details
+
+## Common Commands
+
+```bash
+# SQL operations
+./scripts/sql_pg.sh ./scripts/sql/init.sql
+
+# dbt operations
+./scripts/dbt.sh test                    # Run tests
+./scripts/dbt.sh docs generate           # Generate docs
+./scripts/dbt.sh run --select staging.*  # Run staging models
+
+# Extract with time range
+uv run python scripts/el/extract_etherscan.py \
+  -a 0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72 \
+  --logs --transactions \
+  --last_n_days 7
+```
+
+## Database Schema
+
+- `raw.logs`: Raw event logs with JSONB topics
+- `raw.transactions`: Transaction data
+- `staging.stg_logs_decoded`: Decoded logs with parsed topics (topic0-topic3)
+- Marts: Analytics tables created by dbt
+
+## Documentation
+
+For detailed documentation, see [CLAUDE.md](CLAUDE.md) or the [docs/](docs/) directory.
