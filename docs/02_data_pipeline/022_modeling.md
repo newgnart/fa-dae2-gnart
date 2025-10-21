@@ -3,6 +3,8 @@
 ### Entity Relationship Diagram
 <img src="https://github.com/newgnart/fa-dae2-stables-analytics/tree/main/docs/imgs/entities.drawio.svg" alt="Entity Relationship Diagram" width="600">
 
+
+
 ### Entity Descriptions and Relationships
 **STABLECOIN**
 - Represents each stablecoin type (crvUSD, GHO, frxUSD, etc.)
