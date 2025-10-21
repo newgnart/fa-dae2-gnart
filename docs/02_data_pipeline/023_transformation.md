@@ -1,12 +1,7 @@
-# Modeling
-To serve the analytics needs, data is modeled in a star schema.
-
-## 3. Data Transformation
-
-### 3.1 Raw data ingestion
+## Raw data ingestion
 You have few options when the indexer is running:
 
-- Extract (save to parquet files) 
+- Extract/save to parquet files
 ```bash
 uv run scripts/el/extract_graphql.py 
 ```
@@ -31,7 +26,7 @@ uv run scripts/el/stream_graphql.py \
   -w append
 ```
 
-### 3.2 Data Transformation with dbt
+## Data Transformation with dbt
 
 ## Notes
 - **Crypto data landscape**

@@ -57,12 +57,13 @@ theme:
 
 nav:
   - Home: index.md
-  - Quick Start: 01_getting_started.md
+  - Getting Started: 01_getting_started.md
   - Data Pipeline:
-      - Data Sources: 02_data_pipeline/01_source.md
-      - Data Modeling: 02_data_pipeline/02_modeling.md
-      - Data Transformation: 02_data_pipeline/03_transformation.md
+      - Data Sources: 02_data_pipeline/021_source.md
+      - Data Modeling: 02_data_pipeline/022_modeling.md
+      - Data Transformation: 02_data_pipeline/023_transformation.md
   - Analytics: 03_analytics.md
-  - API Reference: 04_api_reference.md
-  - Configuration: 05_configuration.md
-  - Additional Tools: 06_additional_tools.md
+  - API Reference:
+      - Data Sources: 04_api_reference/041_data_sources.md
+      - Data Loading: 04_api_reference/042_data_loading.md
+      - Configuration: 04_api_reference/043_configuration.md

@@ -34,3 +34,6 @@ For streaming data from a GraphQL endpoint and push to database directly.
     - `loader` (Loader): Loader instance for database operations
     - `schema` (str): Target schema name
     - `table_name` (str): Target table name
+
+## Etherscan
+Utilities for getting data from Etherscan API.

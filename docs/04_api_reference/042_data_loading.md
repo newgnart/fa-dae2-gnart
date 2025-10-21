@@ -31,9 +31,8 @@ client = PostgresClient.from_env()
 
 
 
-## `Loader`
-
-Unified loader class for loading Parquet files or DataFrames to PostgreSQL/Snowflake.
+## Loader
+*A wrapper class inheriting from Database Client and dlt.pipeline* 
 
 **Location:** `onchaindata.data_pipeline.loaders`
 
