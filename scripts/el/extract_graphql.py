@@ -105,11 +105,11 @@ def main():
         help="Output directory",
     )
     parser.add_argument(
-        "-t",
+        "-f",
         "--file_name",
         type=str,
-        help="File name",
-        default="data.parquet",
+        help="Parquet file name to save data to, without extension",
+        default="data",
     )
 
     # Logging configuration

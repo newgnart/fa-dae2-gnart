@@ -37,7 +37,9 @@ class SnowflakeClient(BaseDatabaseClient):
             account=cls._get_env_var("SNOWFLAKE_ACCOUNT"),
             user=cls._get_env_var("SNOWFLAKE_USER"),
             authenticator=cls._get_env_var("SNOWFLAKE_AUTHENTICATOR"),
-            private_key_file=cls._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE"),
+            private_key_file=os.path.expanduser(
+                cls._get_env_var("SNOWFLAKE_PRIVATE_KEY_FILE")
+            ),
             warehouse=cls._get_env_var("SNOWFLAKE_WAREHOUSE"),
             database=cls._get_env_var("SNOWFLAKE_DATABASE"),
             role=cls._get_env_var("SNOWFLAKE_ROLE"),
@@ -68,17 +70,13 @@ class SnowflakeClient(BaseDatabaseClient):
 
     def get_dlt_destination(self):
         """Get DLT destination configuration for Snowflake."""
-
-        # Read private key file and convert to private_key for DLT
-        private_key_path = os.path.expanduser(
-            self.connection_params["private_key_file"]
-        )
+        private_key_file = self.connection_params["private_key_file"]
 
         try:
-            with open(private_key_path, "r") as key_file:
+            with open(private_key_file, "r") as key_file:
                 private_key_data = key_file.read()
         except FileNotFoundError:
-            raise FileNotFoundError(f"Private key file not found: {private_key_path}")
+            raise FileNotFoundError(f"Private key file not found: {private_key_file}")
 
         # Create credentials object that DLT expects
         credentials = {

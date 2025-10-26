@@ -84,6 +84,7 @@ class Loader:
         schema: str,
         table_name: str,
         write_disposition: str = "append",
+        **kwargs,
     ):
         """
         Load Polars DataFrame directly to the database using DLT.
@@ -102,13 +103,8 @@ class Loader:
 
         # Create a DLT resource from the data
         resource = dlt.resource(data, name=table_name)
-
-        # Apply special hints for logs table
-        if table_name == "logs":
-            resource.apply_hints(
-                columns={"topics": {"data_type": "json", "nullable": True}}
-            )
-
+        # if kwargs.get("apply_hints"):
+        #     resource.apply_hints(**kwargs["apply_hints"])
         # Create pipeline with destination-specific configuration
         pipeline = dlt.pipeline(
             pipeline_name="dataframe_loader",

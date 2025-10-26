@@ -1,7 +1,6 @@
 import argparse
 from dotenv import load_dotenv
-from pathlib import Path
-
+import polars as pl
 
 load_dotenv()
 from onchaindata.data_pipeline import Loader
@@ -49,7 +48,7 @@ def main():
 
     args = parser.parse_args()
     if args.client == "snowflake":
-        client = SnowflakeClient()
+        client = SnowflakeClient().from_env()
     elif args.client == "postgres":
         client = PostgresClient.from_env()
     else:
@@ -58,8 +57,17 @@ def main():
         )
 
     loader = Loader(client=client)
-    loader.load_parquet(
-        file_path=args.file_path,
+
+    if args.file_path.endswith(".csv"):
+        df = pl.read_csv(args.file_path)
+    elif args.file_path.endswith(".parquet"):
+        df = pl.read_parquet(args.file_path)
+    else:
+        raise ValueError(
+            f"Invalid file extension: {args.file_path}, use 'csv' or 'parquet'"
+        )
+    loader.load_dataframe(
+        df=df,
         schema=args.schema,
         table_name=args.table,
         write_disposition=args.write_disposition,
