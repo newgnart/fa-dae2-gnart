@@ -8,7 +8,7 @@ You have few options when the indexer is running:
 
 - Extract (save to parquet files) 
 ```bash
-uv run scripts/el/extract_graphql.py 
+uv run scripts/el/extract_graphql.py --query-file scripts/el/stables_transfers.graphql -f transfer -v
 ```
 
 - Load parquet files to database
