@@ -18,8 +18,10 @@ dependencies = [
     "pyarrow>=21.0.0",
     "python-dotenv>=1.0.0",
     "rich>=14.1.0",
+    "selenium>=4.27.1",
     "snowflake-connector-python>=3.17.4",
     "sqlalchemy>=2.0.43",
+    "webdriver-manager>=4.0.2",
 ]
 
 [tool.uv.sources]

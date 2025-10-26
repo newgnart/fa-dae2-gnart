@@ -24,7 +24,7 @@ class APIConfig:
     api_key: Optional[str] = None
     rate_limit: float = 5.0  # requests per second
     timeout: int = 30
-    retry_attempts: int = 3
+    retry_attempts: int = 1
     retry_delay_base: float = 1.0  # base delay for exponential backoff
 
 

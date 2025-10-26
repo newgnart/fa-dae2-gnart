@@ -206,9 +206,13 @@ class EtherscanClient(BaseAPIClient):
             "Implementation": source_data.get("Implementation"),
         }
 
-    def get_contract_creation_block_number(self, address: str) -> int:
+    def get_contract_creation_block_number(self, address: str):
         """Get contract creation block number for given address."""
-        return int(self.get_contract_creation_info(address)["blockNumber"])
+        try:
+            return int(self.get_contract_creation_info(address)["blockNumber"])
+        except Exception as e:
+            logger.warning(f"Could not get contract creation block number for")
+            return None
 
     def get_transaction_receipt(
         self, txhash: str, save: bool = True, save_dir: str = "data/receipts"
