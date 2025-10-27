@@ -719,6 +719,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/ed/86aa307dd764ed56c2ab32fa7842a9b5a3a1b3a3b4709307756fd9ac756b/dlt-1.17.0-py3-none-any.whl", hash = "sha256:e5da62695cfbd37f2569b16af3e50582dc2ede2af5c1c014ded7bb7c089de5b1", size = 1048344 },
 ]
 
+[package.optional-dependencies]
+postgres = [
+    { name = "psycopg2-binary" },
+]
+
 [[package]]
 name = "executing"
 version = "2.2.1"
@@ -1855,7 +1860,7 @@ dependencies = [
     { name = "dbt-core" },
     { name = "dbt-postgres" },
     { name = "dbt-snowflake" },
-    { name = "dlt" },
+    { name = "dlt", extra = ["postgres"] },
     { name = "jupyter" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
@@ -1876,7 +1881,7 @@ requires-dist = [
     { name = "dbt-core", specifier = ">=1.10.13" },
     { name = "dbt-postgres", specifier = ">=1.9.1" },
     { name = "dbt-snowflake", specifier = ">=1.10.2" },
-    { name = "dlt", specifier = ">=1.17.0" },
+    { name = "dlt", extras = ["postgres"], specifier = ">=1.17.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "mkdocs-material", specifier = ">=9.6.22" },

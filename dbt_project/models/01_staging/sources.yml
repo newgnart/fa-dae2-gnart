@@ -1,34 +1,60 @@
 version: 2
 
 sources:
-  - name: etherscan_raw
-    description: "Raw data from Etherscan API"
+  - name: raw_data
+    description: "Raw data from indexer, etherscan, etc."
     schema: raw
     tables:
-      - name: logs
-        description: "Raw log data from smart contracts"
+      - name: raw_transfer
+        description: "Raw transfer events data, from HyperIndex"
         columns:
-          - name: address
-            description: "Contract address that emitted the log"
+          - name: id
+            description: "Unique transfer ID (transaction_hash_logindex)"
             tests:
               - not_null
-          - name: topics
-            description: "JSON array of topics"
-            tests:
-              - not_null
-          - name: data
-            description: "Encoded log data"
           - name: block_number
+            description: "Block number as string"
             tests:
               - not_null
-          - name: block_hash
-          - name: time_stamp
-            description: "Unix timestamp of the block"
-          - name: gas_price
-          - name: gas_used
-          - name: log_index
-            description: "Index of log within the transaction"
-          - name: transaction_hash
+          - name: timestamp
+            description: "Unix timestamp as string"
+          - name: contract_address
+            description: "Token contract address"
             tests:
               - not_null
-          - name: transaction_index
+          - name: from
+            description: "Sender address"
+          - name: to
+            description: "Recipient address"
+          - name: value
+            description: "Transfer amount as string"
+          - name: _dlt_load_id
+            description: "DLT load identifier"
+          - name: _dlt_id
+            description: "DLT unique row identifier"
+
+      - name: raw_stablecoin
+        description: "Raw stablecoin metadata and configuration"
+        columns:
+          - name: contract_address
+            description: "Token contract address"
+            tests:
+              - not_null
+          - name: chain
+            description: "Blockchain identifier (ethereum, polygon, etc.)"
+            tests:
+              - not_null
+          - name: symbol
+            description: "Token symbol (e.g., USDT, USDC)"
+          - name: name
+            description: "Full token name"
+          - name: currency
+            description: "ISO currency code (usd, eur, etc.)"
+          - name: backing_type
+            description: "Collateral type: fiat-backed, crypto-backed, algorithmic"
+          - name: decimals
+            description: "Token decimal places"
+          - name: _dlt_load_id
+            description: "DLT load identifier"
+          - name: _dlt_id
+            description: "DLT unique row identifier"

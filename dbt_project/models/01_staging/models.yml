@@ -1,40 +1,66 @@
 version: 2
 
 models:
-  - name: stg_logs_decoded
-    description: "Decoded logs data with parsed topics"
+  - name: stg_transfer
+    description: "Staging model for transfer events with type casting"
+    columns:
+      - name: id
+        description: "Unique transfer ID (transaction_hash_logindex)"
+        tests:
+          - not_null
+          - unique
+      - name: block_number
+        description: "Block number (cast to bigint)"
+        tests:
+          - not_null
+      - name: block_timestamp
+        description: "Block timestamp in UTC"
+        tests:
+          - not_null
+      - name: contract_address
+        description: "Token contract address"
+        tests:
+          - not_null
+      - name: from_address
+        description: "Sender address"
+      - name: to_address
+        description: "Recipient address"
+      - name: amount_raw
+        description: "Transfer amount in smallest unit (before decimal adjustment)"
+      - name: _dlt_load_id
+        description: "DLT load identifier"
+      - name: _dlt_id
+        description: "DLT unique row identifier"
+
+  - name: stg_stablecoin
+    description: "Staging model for stablecoin metadata with type casting"
     columns:
       - name: contract_address
-        description: "Contract address that emitted the log"
+        description: "Token contract address"
         tests:
           - not_null
-      - name: block_number
-        description: "Block number where event occurred"
+      - name: chain
+        description: "Blockchain identifier"
         tests:
           - not_null
-      - name: block_time
-        description: "Timestamp of the block"
-      - name: transaction_hash
-        description: "Hash of the transaction"
+      - name: symbol
+        description: "Token symbol (e.g., USDT, USDC)"
+      - name: name
+        description: "Full token name"
+      - name: currency
+        description: "ISO currency code (usd, eur, etc.)"
+      - name: backing_type
+        description: "Collateral type: fiat-backed, crypto-backed, algorithmic"
+      - name: decimals
+        description: "Token decimal places"
         tests:
           - not_null
-      - name: index
-        description: "Index of log within the transaction"
-      - name: topic0
-        description: "Event signature (topic0)"
-      - name: topic1
-        description: "First indexed parameter"
-      - name: topic2
-        description: "Second indexed parameter"
-      - name: topic3
-        description: "Third indexed parameter"
-      - name: data
-        description: "Encoded event parameters"
+      - name: _dlt_load_id
+        description: "DLT load identifier"
+      - name: _dlt_id
+        description: "DLT unique row identifier"
     tests:
       - dbt_utils.unique_combination_of_columns:
-          config:
-            severity: warn
           combination_of_columns:
             - contract_address
-            - transaction_hash
-            - index
+            - chain

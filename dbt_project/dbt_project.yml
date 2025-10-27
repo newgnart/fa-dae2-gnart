@@ -1,9 +1,9 @@
-name: "stablecoins"
+name: "stables_analytics"
 version: "1.0.0"
 config-version: 2
 
 # This setting configures which "profile" dbt uses for this project.
-profile: "stablecoins"
+profile: "stables_analytics"
 
 # These configurations specify where dbt should look for different types of files.
 model-paths: ["models"]
@@ -19,15 +19,14 @@ clean-targets: # directories to be removed by `dbt clean`
 
 # Configuring models
 models:
-  stablecoins:
-    staging:
+  stables_analytics:
+    01_staging:
       +materialized: view
-    intermediate:
-      +materialized: ephemeral
-    marts:
+      +schema: staging
+    # Uncomment when you add models to these folders:
+    # 02_intermediate:
+    #   +materialized: ephemeral
+    #   +schema: intermediate
+    03_mart:
       +materialized: table
-# seeds:
-#   capstone_project:
-#     +column_types:
-#       id: integer
-#       created_at: timestamp
+      +schema: mart

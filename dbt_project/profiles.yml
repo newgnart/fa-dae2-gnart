@@ -1,4 +1,4 @@
-stablecoins:
+stables_analytics:
   target: dev
   outputs:
     dev:
@@ -8,7 +8,7 @@ stablecoins:
       user: "{{ env_var('POSTGRES_USER') }}"
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
       dbname: "{{ env_var('POSTGRES_DB') }}"
-      schema: staging # default schema
+      schema: raw
       threads: 4
       keepalives_idle: 0
       connect_timeout: 10
