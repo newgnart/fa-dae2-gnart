@@ -101,13 +101,30 @@ uv run python scripts/el/extract_etherscan.py \
 
 ### Data Loading
 ```bash
-# Load Parquet file to PostgreSQL
+# Load Parquet file to PostgreSQL (append mode)
 uv run python scripts/el/load.py \
   -f .data/raw/ethereum_0xaddress_logs_18500000_20000000.parquet \
   -c postgres \
   -s raw \
   -t logs \
   -w append
+
+# Load CSV with full replacement
+uv run python scripts/el/load.py \
+  -f .data/raw/stablecoins.csv \
+  -c postgres \
+  -s raw \
+  -t raw_stablecoin \
+  -w replace
+
+# Load CSV with merge/upsert (only updated rows needed)
+uv run python scripts/el/load.py \
+  -f .data/raw/stablecoins_updates.csv \
+  -c postgres \
+  -s raw \
+  -t raw_stablecoin \
+  -w merge \
+  -k contract_address,chain
 
 # Load to Snowflake (requires SNOWFLAKE_* env vars)
 uv run python scripts/el/load.py \
@@ -163,6 +180,104 @@ Optional (for Snowflake):
 2. **Parquet → PostgreSQL/Snowflake**: `load.py` loads into `raw` schema tables
 3. **PostgreSQL → dbt**: dbt models transform `raw.logs` → `staging.stg_logs_decoded`
 4. Failed extractions are logged to `logging/extract_error/` and automatically retried with smaller chunk sizes (10x reduction)
+
+## Stablecoin Reference Data Management
+
+The project uses **SCD Type 2** (Slowly Changing Dimension) to track stablecoin metadata changes over time using dbt snapshots.
+
+### Architecture
+```
+CSV File → PostgreSQL (raw.raw_stablecoin) → dbt Snapshot (snapshots.snap_stablecoin) → Dimension (mart.dim_stablecoin)
+```
+
+### Initial Setup (First Time)
+```bash
+# 1. Load initial stablecoin data (all stablecoins)
+uv run python scripts/el/load.py \
+  -f .data/raw/stablecoins.csv \
+  -c postgres \
+  -s raw \
+  -t raw_stablecoin \
+  -w replace
+
+# 2. Create initial snapshot (establishes baseline)
+./scripts/dbt.sh snapshot
+
+# 3. Build dimension table
+./scripts/dbt.sh run --select dim_stablecoin
+```
+
+### Updating Stablecoin Metadata (Incremental Updates)
+
+**When to update**: When stablecoin attributes change (name, symbol, backing_type, etc.) or when adding new stablecoins.
+
+**Option A: Merge/Upsert (Recommended - Only Updated Rows)**
+```bash
+# 1. Create CSV with ONLY changed/new stablecoins
+# Example: .data/raw/stablecoins_updates.csv
+# contract_address,chain,symbol,name,currency,backing_type,decimals
+# 0xa0b8...,ethereum,USDC,USD Coin Updated,usd,fiat-backed,6
+# 0x1234...,polygon,NEWCOIN,New Stablecoin,usd,crypto-backed,18
+
+# 2. Merge updates into raw table
+uv run python scripts/el/load.py \
+  -f .data/raw/stablecoins_updates.csv \
+  -c postgres \
+  -s raw \
+  -t raw_stablecoin \
+  -w merge \
+  -k contract_address,chain
+
+# 3. Run snapshot to detect and record changes (SCD2)
+./scripts/dbt.sh snapshot
+
+# 4. Refresh dimension table
+./scripts/dbt.sh run --select dim_stablecoin
+```
+
+**Option B: Full Replacement (All Stablecoins)**
+```bash
+# 1. Provide CSV with ALL stablecoins (not just updates)
+uv run python scripts/el/load.py \
+  -f .data/raw/stablecoins_full.csv \
+  -c postgres \
+  -s raw \
+  -t raw_stablecoin \
+  -w replace
+
+# 2-4. Same as Option A
+./scripts/dbt.sh snapshot
+./scripts/dbt.sh run --select dim_stablecoin
+```
+
+### CSV Format
+```csv
+contract_address,chain,symbol,name,currency,backing_type,decimals
+0x02950460e2b9529d0e00284a5fa2d7bdf3fa4d72,ethereum,CURVE,Curve Finance USD,usd,crypto-backed,18
+0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,ethereum,USDC,USD Coin,usd,fiat-backed,6
+```
+
+### How SCD2 Works
+- **First snapshot run**: All records get `valid_from = now()`, `valid_to = NULL`, `is_current = true`
+- **When changes detected**:
+  - Old version: `valid_to` is set to current timestamp, `is_current = false`
+  - New version: New row with `valid_from = now()`, `valid_to = NULL`, `is_current = true`
+- **Result**: Full history of all changes preserved in `mart.dim_stablecoin`
+
+### Querying SCD2 Dimension
+```sql
+-- Get current stablecoin metadata
+SELECT * FROM mart.dim_stablecoin WHERE is_current = true;
+
+-- Get stablecoin metadata at a specific point in time
+SELECT * FROM mart.dim_stablecoin
+WHERE '2024-01-15'::timestamp BETWEEN valid_from AND COALESCE(valid_to, '9999-12-31');
+
+-- See all historical changes for a specific stablecoin
+SELECT * FROM mart.dim_stablecoin
+WHERE contract_address = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+ORDER BY valid_from DESC;
+```
 
 ## dbt Project Structure
 

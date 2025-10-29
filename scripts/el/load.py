@@ -45,6 +45,13 @@ def main():
         help="Write disposition, either 'append' or 'replace' or 'merge'",
         default="append",
     )
+    parser.add_argument(
+        "-k",
+        "--primary_key",
+        type=str,
+        help="Comma-separated list of column names to use as primary key for merge. Required when -w merge. Example: 'contract_address,chain'",
+        default=None,
+    )
 
     args = parser.parse_args()
     if args.client == "snowflake":
@@ -66,11 +73,18 @@ def main():
         raise ValueError(
             f"Invalid file extension: {args.file_path}, use 'csv' or 'parquet'"
         )
+
+    # Parse primary key if provided
+    primary_key = None
+    if args.primary_key:
+        primary_key = [col.strip() for col in args.primary_key.split(",")]
+
     loader.load_dataframe(
         df=df,
         schema=args.schema,
         table_name=args.table,
         write_disposition=args.write_disposition,
+        primary_key=primary_key,
     )
 
 

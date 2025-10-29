@@ -84,6 +84,7 @@ class Loader:
         schema: str,
         table_name: str,
         write_disposition: str = "append",
+        primary_key: list[str] = None,
         **kwargs,
     ):
         """
@@ -94,17 +95,30 @@ class Loader:
             schema: Target schema name
             table_name: Target table name
             write_disposition: How to handle existing data ("append", "replace", "merge")
+            primary_key: List of column names to use as primary key for merge operations.
+                        Required when write_disposition="merge".
+                        Example: ["contract_address", "chain"]
 
         Returns:
             DLT pipeline run result
         """
+        # Validate merge requirements
+        if write_disposition == "merge" and not primary_key:
+            raise ValueError(
+                "primary_key must be specified when write_disposition='merge'. "
+                "Example: primary_key=['contract_address', 'chain']"
+            )
+
         # Convert DataFrame to list of dicts for DLT
         data = df.to_dicts()
 
         # Create a DLT resource from the data
         resource = dlt.resource(data, name=table_name)
-        # if kwargs.get("apply_hints"):
-        #     resource.apply_hints(**kwargs["apply_hints"])
+
+        # Apply primary key hint for merge operations
+        if primary_key:
+            resource.apply_hints(primary_key=primary_key)
+
         # Create pipeline with destination-specific configuration
         pipeline = dlt.pipeline(
             pipeline_name="dataframe_loader",
