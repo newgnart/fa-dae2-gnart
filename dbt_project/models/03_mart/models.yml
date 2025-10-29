@@ -1,0 +1,94 @@
+version: 2
+
+models:
+  - name: dim_stablecoin
+    description: "Dimension table for stablecoin metadata"
+    columns:
+      - name: contract_address
+        description: "Token contract address"
+        tests:
+          - not_null
+      - name: chain
+        description: "Blockchain identifier"
+        tests:
+          - not_null
+      - name: symbol
+        description: "Token symbol (e.g., USDT, USDC)"
+      - name: name
+        description: "Full token name"
+      - name: currency
+        description: "ISO currency code (usd, eur, etc.)"
+      - name: backing_type
+        description: "Collateral type: fiat-backed, crypto-backed, algorithmic"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['fiat-backed', 'crypto-backed', 'algorithmic']
+      - name: decimals
+        description: "Token decimal places"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Timestamp when record was created"
+      - name: updated_at
+        description: "Timestamp when record was last updated"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - contract_address
+            - chain
+          where: "is_current = true"
+
+  - name: fct_transfer
+    description: "Fact table for stablecoin transfer events with business enrichment"
+    columns:
+      - name: transaction_hash
+        description: "Ethereum transaction hash"
+        tests:
+          - not_null
+      - name: log_index
+        description: "Log index within the transaction"
+        tests:
+          - not_null
+      - name: date_key
+        description: "Date dimension key in YYYYMMDD format"
+        tests:
+          - not_null
+      - name: block_number
+        description: "Block number where transfer occurred"
+        tests:
+          - not_null
+      - name: block_timestamp
+        description: "Block timestamp in UTC"
+        tests:
+          - not_null
+      - name: contract_address
+        description: "Token contract address"
+        tests:
+          - not_null
+      - name: from_address
+        description: "Sender address (0x0 for mints)"
+        tests:
+          - not_null
+      - name: to_address
+        description: "Recipient address (0x0 for burns)"
+        tests:
+          - not_null
+      - name: amount_raw
+        description: "Transfer amount in smallest unit (before decimal adjustment)"
+      - name: amount
+        description: "Transfer amount adjusted for decimals (assuming 6 decimals)"
+      - name: usd_value
+        description: "Approximate USD value (for stablecoins)"
+      - name: transaction_type
+        description: "Type of transaction: transfer, mint, or burn"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['transfer', 'mint', 'burn']
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - transaction_hash
+            - log_index

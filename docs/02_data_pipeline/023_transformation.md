@@ -2,22 +2,22 @@
 - Load parquet files to database
 ```bash
 uv run scripts/el/load.py \
--f .data/raw/demo/transfer_23652044_23652327.parquet \ # Path to the Parquet file
--c snowflake \ # Database client, 'snowflake' or 'postgres'
--s demo \ # Schema name
--t transfers \ # Table name
--w append # Write disposition, 'append' or 'replace' or 'merge'
+-f .data/raw/demo/transfer_23652044_23652327.parquet \
+-c postgres \
+-s raw \
+-t raw_transfers \
+-w append
 ```
 
 - **Stream/load directly from the indexer to the database**
 ```bash
 uv run scripts/el/stream_graphql.py \
--e http://localhost:8080/v1/graphql \ # GraphQL endpoint URL
---fields id,blockNumber,timestamp,contractAddress,from,to,value \ # Fields to fetch
---graphql-table stablesTransfers \ # Name of the table of GraphQL Endpoint to query, e.g. 'stablesTransfers'
--c postgres \ # Database client, 'snowflake' or 'postgres'
--s demo \ # Schema name
--t transfers \ # Table name
+-e http://localhost:8080/v1/graphql \ 
+--fields id,blockNumber,timestamp,contractAddress,from,to,value \ 
+--graphql-table stablesTransfers \
+-c postgres \ 
+-s demo \ 
+-t transfers \ 
 ```
 
 ## Data Transformation with dbt

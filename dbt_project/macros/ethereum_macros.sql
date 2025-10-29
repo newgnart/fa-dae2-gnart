@@ -7,11 +7,11 @@
 {% macro uint256_to_numeric(hex_string) %}
     -- Convert hex string to numeric using SQL
     -- Handle uint256 values that exceed bigint limits
-    case 
+    case
         when {{ hex_string }} is null then null
         else (
             select sum(
-                case 
+                case
                     when digit = '0' then 0
                     when digit = '1' then 1 * power(16, pos)
                     when digit = '2' then 2 * power(16, pos)
@@ -31,15 +31,25 @@
                 end
             )
             from (
-                select 
+                select
                     substring(lower(replace({{ hex_string }}, '0x', '')) from i for 1) as digit,
                     (length(lower(replace({{ hex_string }}, '0x', ''))) - i) as pos
                 from generate_series(
-                    length(lower(replace({{ hex_string }}, '0x', ''))), 
-                    1, 
+                    length(lower(replace({{ hex_string }}, '0x', ''))),
+                    1,
                     -1
                 ) as i
             ) as digits
         )
     end
+{% endmacro %}
+
+
+{% macro convert_token_amount(amount_raw, decimals, output_precision=8) %}
+    -- Convert raw token amount to decimal amount using actual token decimals
+    -- Parameters:
+    --   amount_raw: raw amount in smallest unit (e.g., wei or token's smallest unit)
+    --   decimals: number of decimals for the token (from dim_stablecoin)
+    --   output_precision: decimal precision for output (default 8)
+    ({{ amount_raw }} / power(10, {{ decimals }}))::decimal(28, {{ output_precision }})
 {% endmacro %}
