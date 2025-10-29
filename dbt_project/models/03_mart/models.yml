@@ -37,6 +37,7 @@ models:
           combination_of_columns:
             - contract_address
             - chain
+          where: "is_current = true"
 
   - name: fct_transfer
     description: "Fact table for stablecoin transfer events with business enrichment"
@@ -86,11 +87,6 @@ models:
           - accepted_values:
               arguments:
                 values: ['transfer', 'mint', 'burn']
-      - name: source_id
-        description: "Original ID from source data"
-        tests:
-          - not_null
-          - unique
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:

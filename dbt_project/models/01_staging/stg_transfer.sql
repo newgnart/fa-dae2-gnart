@@ -10,7 +10,9 @@ casted as (
         contract_address::varchar(42) as contract_address,
         "from"::varchar(42) as from_address,
         "to"::varchar(42) as to_address,
-        value::numeric(38, 0) as amount_raw
+        value::numeric(38, 0) as amount_raw,
+        _dlt_load_id,
+        _dlt_id
     from source
 )
 
