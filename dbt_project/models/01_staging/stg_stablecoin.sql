@@ -1,17 +1,17 @@
-with source as (
-    select * from {{ source('raw_data', 'raw_stablecoin') }}
+WITH source AS (
+    SELECT * FROM {{ source('raw_data', 'raw_stablecoin') }}
 ),
 
-casted as (
-    select
-        contract_address::varchar(42) as contract_address,
-        chain::varchar(20) as chain,
-        symbol::varchar(20) as symbol,
-        name::varchar(100) as name,
-        currency::varchar(10) as currency,
-        backing_type::varchar(20) as backing_type,
-        decimals::integer as decimals
-    from source
+casted AS (
+    SELECT
+        contract_address::VARCHAR(42) AS contract_address,
+        chain::VARCHAR(20) AS chain,
+        symbol::VARCHAR(20) AS symbol,
+        name::VARCHAR(100) AS name,
+        currency::VARCHAR(10) AS currency,
+        backing_type::VARCHAR(20) AS backing_type,
+        decimals::INTEGER AS decimals
+    FROM source
 )
 
-select * from casted
+SELECT * FROM casted

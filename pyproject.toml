@@ -27,5 +27,11 @@ dependencies = [
 [tool.uv.sources]
 onchaindata = { path = "./src" }
 
+[dependency-groups]
+dev = [
+    "sqlfluff>=3.5.0",
+    "sqlfluff-templater-dbt>=3.5.0",
+]
+
 [tool.uv]
 package = true

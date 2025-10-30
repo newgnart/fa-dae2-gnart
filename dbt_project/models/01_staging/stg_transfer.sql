@@ -1,28 +1,28 @@
-with source as (
-    select * from {{ source('raw_data', 'raw_transfer') }}
+WITH source AS (
+    SELECT * FROM {{ source('raw_data', 'raw_transfer') }}
 ),
 
-casted as (
-    select
+casted AS (
+    SELECT
         id,
-        block_number::bigint as block_number,
+        block_number::BIGINT AS block_number,
         {% if target.type == 'postgres' %}
-        to_timestamp(timestamp::bigint) AT TIME ZONE 'UTC' as block_timestamp,
+        TO_TIMESTAMP(timestamp::BIGINT) AT TIME ZONE 'UTC' AS block_timestamp,
         {% else %}
-        to_timestamp(timestamp::bigint) as block_timestamp,
+            TO_TIMESTAMP(timestamp::BIGINT) AS block_timestamp,
         {% endif %}
-        contract_address::varchar(42) as contract_address,
+        contract_address::VARCHAR(42) AS contract_address,
         {% if target.type == 'postgres' %}
-        "from"::varchar(42) as from_address,
-        "to"::varchar(42) as to_address,
+        "from"::VARCHAR(42) AS from_address,
+        "to"::VARCHAR(42) AS to_address,
         {% else %}
-        "FROM"::varchar(42) as from_address,
-        "TO"::varchar(42) as to_address,
+            "FROM"::VARCHAR(42) AS from_address,
+            "TO"::VARCHAR(42) AS to_address,
         {% endif %}
-        value::numeric(38, 0) as amount_raw,
+        value::NUMERIC(38, 0) AS amount_raw,
         _dlt_load_id,
         _dlt_id
-    from source
+    FROM source
 )
 
-select * from casted
+SELECT * FROM casted

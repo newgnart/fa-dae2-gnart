@@ -1,0 +1,63 @@
+[sqlfluff]
+# Database dialect - Snowflake
+dialect = snowflake
+
+# Templater for dbt projects
+templater = dbt
+
+# General settings
+runaway_limit = 10
+max_line_length = 200
+indent_unit = space
+
+# Exclude specific rules if needed
+exclude_rules = RF02, AM06, RF04
+
+# Indentation settings
+[sqlfluff:indentation]
+tab_space_size = 4
+
+# Layout and formatting
+[sqlfluff:layout:type:comma]
+spacing_before = touch
+line_position = trailing
+
+# Capitalization rules
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = consistent
+
+# Aliasing rules
+[sqlfluff:rules:aliasing.table]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.column]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.expression]
+allow_scalar = False
+
+# Column reference rules
+[sqlfluff:rules:ambiguous.column_references]
+group_by_and_order_by_style = implicit
+
+# dbt templater configuration
+[sqlfluff:templater:dbt]
+project_dir = .
+profiles_dir = .
+profile = stables_analytics
+target = test
+# Skip dbt compilation and use Jinja templater instead
+skip_compilation = True
+
+# Enable dbt builtins for Jinja templater
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
