@@ -66,7 +66,7 @@ enriched AS (
         d.name,
         COALESCE(d.decimals, 18) AS decimals,
 
-        -- Business enrichment: Determine transaction type
+        -- Determine transaction type
         CASE
             WHEN p.from_address = '0x0000000000000000000000000000000000000000' THEN 'mint'
             WHEN p.to_address = '0x0000000000000000000000000000000000000000' THEN 'burn'
