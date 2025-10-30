@@ -43,7 +43,7 @@ jobs:
 
       - name: Run dbt debug
         run: |
-          uv run dbt debug --target ci --project-dir dbt_project
+          cd dbt_project && uv run dbt debug --target test
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run SQLFluff lint
         run: |
-          uv run sqlfluff lint dbt_project/
+          cd dbt_project && uv run sqlfluff lint .
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -69,7 +69,7 @@ jobs:
 
       - name: Run dbt deps
         run: |
-          uv run dbt deps --target ci --project-dir dbt_project
+          cd dbt_project && uv run dbt deps --target test
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -82,7 +82,7 @@ jobs:
 
       - name: Run dbt tests
         run: |
-          uv run dbt test --target ci --project-dir dbt_project
+          cd dbt_project && uv run dbt test --target test
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
