@@ -11,14 +11,14 @@
     )
 }}
 
-select
-    contract_address,
-    chain,
-    symbol,
-    name,
-    currency,
-    backing_type,
-    decimals
-from {{ ref('stg_stablecoin') }}
+    select
+        contract_address,
+        chain,
+        symbol,
+        name,
+        currency,
+        backing_type,
+        decimals
+    from {{ ref('stg_stablecoin') }}
 
 {% endsnapshot %}

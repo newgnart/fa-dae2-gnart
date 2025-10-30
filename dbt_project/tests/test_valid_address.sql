@@ -3,7 +3,7 @@
 select
     contract_address,
     count(*) as invalid_count
-from {{ ref('stg_logs_decoded') }}
+from {{ ref('fct_transfer') }}
 where
     contract_address is null
     or length(contract_address) != 42
