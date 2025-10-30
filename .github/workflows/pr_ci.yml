@@ -43,9 +43,9 @@ jobs:
 
       - name: Setup Snowflake private key
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_FILE }}" > ~/.ssh/snowflake_key.p8
-          chmod 600 ~/.ssh/snowflake_key.p8
+          mkdir -p .ssh
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_FILE }}" > .ssh/snowflake_key.p8
+          chmod 600 .ssh/snowflake_key.p8
 
       - name: Run dbt debug
         run: |
@@ -57,7 +57,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ vars.SNOWFLAKE_ROLE }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_PRIVATE_KEY_FILE: ~/.ssh/snowflake_key.p8
+          SNOWFLAKE_PRIVATE_KEY_FILE: .ssh/snowflake_key.p8
 
       - name: Run SQLFluff lint
         run: |
@@ -69,7 +69,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ vars.SNOWFLAKE_ROLE }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_PRIVATE_KEY_FILE: ~/.ssh/snowflake_key.p8
+          SNOWFLAKE_PRIVATE_KEY_FILE: .ssh/snowflake_key.p8
 
       - name: Run dbt deps
         run: |
@@ -81,7 +81,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ vars.SNOWFLAKE_ROLE }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_PRIVATE_KEY_FILE: ~/.ssh/snowflake_key.p8
+          SNOWFLAKE_PRIVATE_KEY_FILE: .ssh/snowflake_key.p8
 
       - name: Run dbt tests
         run: |
@@ -93,4 +93,4 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ vars.SNOWFLAKE_ROLE }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_PRIVATE_KEY_FILE: ~/.ssh/snowflake_key.p8
+          SNOWFLAKE_PRIVATE_KEY_FILE: .ssh/snowflake_key.p8
