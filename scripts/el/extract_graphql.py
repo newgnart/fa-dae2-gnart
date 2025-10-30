@@ -21,6 +21,58 @@ from onchaindata.data_extraction import GraphQLBatch, GraphQLStream
 logger = logging.getLogger(__name__)
 
 
+def _add_block_filters_to_query(
+    query: str, table_name: str, from_block: int = None, to_block: int = None
+) -> str:
+    """
+    Add block number filters to a GraphQL query.
+
+    Args:
+        query: Original GraphQL query string
+        table_name: Name of the table in the query
+        from_block: Minimum block number (inclusive)
+        to_block: Maximum block number (inclusive)
+
+    Returns:
+        Modified query string with block filters
+    """
+    import re
+
+    # Build where clause - combine conditions in a single blockNumber object
+    block_conditions = []
+    if from_block is not None:
+        block_conditions.append(f"_gte: {from_block}")
+    if to_block is not None:
+        block_conditions.append(f"_lte: {to_block}")
+
+    if not block_conditions:
+        return query
+
+    # Create proper GraphQL where clause with conditions in single blockNumber object
+    where_clause = f"blockNumber: {{{', '.join(block_conditions)}}}"
+
+    # Find the table call in the query and add/modify where clause
+    # Pattern: tableName(...) or tableName(order_by: {...})
+    pattern = rf"{table_name}\s*\((.*?)\)"
+
+    def replacer(match):
+        existing_args = match.group(1).strip()
+        # Check if there's already a where clause
+        if "where:" in existing_args:
+            # Add conditions to existing where clause
+            # This is complex, so for now we'll just append
+            return f"{table_name}({existing_args}, where: {{{where_clause}}})"
+        elif existing_args:
+            # Has other args (like order_by), add where clause
+            return f"{table_name}({existing_args}, where: {{{where_clause}}})"
+        else:
+            # No existing args, add where clause
+            return f"{table_name}(where: {{{where_clause}}})"
+
+    modified_query = re.sub(pattern, replacer, query, count=1)
+    return modified_query
+
+
 def extract(args):
     """
     Execute batch mode: fetch data once and save to Parquet.
@@ -36,6 +88,15 @@ def extract(args):
         query = args.query
     else:
         raise ValueError("Batch mode requires either --query or --query-file")
+
+    # Modify query to include block number filters if provided
+    if args.from_block is not None or args.to_block is not None:
+        query = _add_block_filters_to_query(
+            query, args.graphql_table, args.from_block, args.to_block
+        )
+        logger.info(
+            f"Applied block filters: from_block={args.from_block}, to_block={args.to_block}"
+        )
 
     # Fetch data
     logger.info(f"Fetching from: {args.endpoint}")
@@ -94,6 +155,20 @@ def main():
         type=str,
         help="Name of the table from GraphQL Endpoint, e.g. 'stablesTransfers'",
         default="stablesTransfers",
+    )
+
+    # Block range filters
+    parser.add_argument(
+        "--from_block",
+        type=int,
+        help="Starting block number (inclusive)",
+        default=None,
+    )
+    parser.add_argument(
+        "--to_block",
+        type=int,
+        help="Ending block number (inclusive)",
+        default=None,
     )
 
     # Output configuration
