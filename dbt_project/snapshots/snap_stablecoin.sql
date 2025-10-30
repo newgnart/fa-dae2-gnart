@@ -7,7 +7,7 @@
         strategy='check',
         check_cols=['symbol', 'name', 'currency', 'backing_type', 'decimals'],
         invalidate_hard_deletes=True,
-        updated_at='date_trunc(\'second\', current_timestamp at time zone \'utc\')'
+        updated_at='date_trunc(\'second\', current_timestamp' ~ (' at time zone \'utc\'' if target.type == 'postgres' else '::timestamp_ntz') ~ ')'
     )
 }}
 
