@@ -53,9 +53,9 @@ jobs:
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
 
-      - name: Run SQLFluff lint
+      - name: Run dbt deps
         run: |
-          cd dbt_project && uv run sqlfluff lint .
+          cd dbt_project && uv run dbt deps --target test
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -64,10 +64,9 @@ jobs:
           SNOWFLAKE_ROLE: ${{ vars.SNOWFLAKE_ROLE }}
           SNOWFLAKE_SCHEMA: ${{ vars.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-
-      - name: Run dbt deps
+      - name: Run SQLFluff lint
         run: |
-          cd dbt_project && uv run dbt deps --target test
+          cd dbt_project && uv run sqlfluff lint .
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
