@@ -11,7 +11,7 @@
 - The circulating/total supply of a stablecoin at a point in time
 - Relationship: Stablecoin EXISTS WITH Supply
 
-**TRANSACTION**
+**TRANSFER**
 - Transfer of stablecoins between addresses
 - Relationship: Address SENDS/RECEIVES Stablecoin
 
@@ -33,6 +33,7 @@
 - OBT can work for simple analytics, this project has multiple business processes (transfers, contract interactions, time-based trends) that would create a massively denormalized table with sparse columns and data duplication.
 - Data Vault: Frequent schema changes
 - Intuitive star schema:
+
 ```sql
 SELECT 
     d.symbol,
