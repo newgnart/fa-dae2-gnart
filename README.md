@@ -9,7 +9,7 @@ Inspired by [Visa on Chain Analytics](https://visaonchainanalytics.com/).
 ### Prerequisites
 ```bash
 # Create Docker network
-docker network create fa-dae2-capstone_kafka_network
+docker network create kafka_network
 
 # Start PostgreSQL
 docker-compose up -d

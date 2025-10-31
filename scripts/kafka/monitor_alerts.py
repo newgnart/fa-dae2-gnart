@@ -71,10 +71,10 @@ class AlertMonitor:
 
         self.consumer = KafkaConsumer(
             kafka_topic,
-            bootstrap_servers=kafka_bootstrap_servers.split(','),
-            group_id='alert-monitor',
-            value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-            auto_offset_reset='latest',  # Only process new messages
+            bootstrap_servers=kafka_bootstrap_servers.split(","),
+            group_id="alert-monitor",
+            value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+            auto_offset_reset="latest",  # Only process new messages
             enable_auto_commit=True,
         )
 
@@ -97,9 +97,9 @@ class AlertMonitor:
         Runs forever until interrupted.
         """
         logger.info("Monitoring for alerts... Press Ctrl+C to stop")
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("ALERT MONITOR ACTIVE")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
         try:
             for message in self.consumer:
@@ -172,19 +172,19 @@ class AlertMonitor:
         """
         value = transfer.get("value", 0)
 
-        # Handle string values (common in blockchain data)
+        # Handle string values from GraphQL (blockchain data comes as strings)
         if isinstance(value, str):
             try:
                 value = int(value)
             except ValueError:
                 return 0.0
 
-        # Assume 18 decimals by default (most stablecoins)
+        # Hardcoded to 18 decimals (GraphQL data doesn't include decimals field)
         # In production, join with dim_stablecoin for actual decimals
-        decimals = transfer.get("decimals", 18)
+        decimals = 18
 
         # For stablecoins, 1 token ≈ 1 USD
-        return value / (10 ** decimals)
+        return value / (10**decimals)
 
     def _send_alert(self, transfer: dict, amount_usd: float, level: str):
         """
@@ -208,9 +208,9 @@ class AlertMonitor:
         # Determine emoji based on level
         emoji = "🚨" if level == "CRITICAL" else "⚠️"
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print(f"{emoji} {level} ALERT: Large Stablecoin Transfer Detected")
-        print("="*80)
+        print("=" * 80)
         print(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
         print(f"Amount:          ${amount_usd:,.2f}")
         print(f"From:            {transfer['from']}")
@@ -219,7 +219,7 @@ class AlertMonitor:
         print(f"Timestamp:       {self._format_timestamp(transfer.get('timestamp'))}")
         print(f"Transaction:     {tx_hash}")
         print(f"Contract:        {transfer.get('contractAddress', 'N/A')}")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
         # TODO: Send to external alerting systems
         # Example:
@@ -239,22 +239,24 @@ class AlertMonitor:
         emoji = "🟢" if event_type == "MINT" else "🔴"
         tx_hash = transfer.get("id", "unknown").split("_")[0]
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print(f"{emoji} {event_type} EVENT: Large Supply Change Detected")
-        print("="*80)
+        print("=" * 80)
         print(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
         print(f"Amount:          ${amount_usd:,.2f}")
-        print(f"Address:         {transfer.get('to' if event_type == 'MINT' else 'from', 'N/A')}")
+        print(
+            f"Address:         {transfer.get('to' if event_type == 'MINT' else 'from', 'N/A')}"
+        )
         print(f"Block Number:    {transfer.get('blockNumber', 'N/A')}")
         print(f"Transaction:     {tx_hash}")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
     def _format_timestamp(self, timestamp) -> str:
         """
         Format timestamp for display.
 
         Args:
-            timestamp: Unix timestamp (seconds or milliseconds)
+            timestamp: Unix timestamp (seconds or milliseconds), as int/float or string
 
         Returns:
             Formatted datetime string
@@ -263,26 +265,30 @@ class AlertMonitor:
             return "N/A"
 
         try:
+            # Handle string timestamps from GraphQL
+            if isinstance(timestamp, str):
+                timestamp = float(timestamp)
+
             # Handle both seconds and milliseconds
             if timestamp > 1e12:  # Milliseconds
                 timestamp = timestamp / 1000
 
             dt = datetime.fromtimestamp(timestamp)
             return dt.strftime("%Y-%m-%d %H:%M:%S")
-        except (ValueError, OSError):
+        except (ValueError, OSError, TypeError):
             return "Invalid timestamp"
 
     def _print_stats(self):
         """Print monitoring statistics."""
-        print("\n" + "-"*80)
+        print("\n" + "-" * 80)
         print("MONITORING STATISTICS")
-        print("-"*80)
+        print("-" * 80)
         print(f"Total Processed:       {self.stats['total_processed']:,}")
         print(f"Large Transfers:       {self.stats['large_transfers']:,}")
         print(f"Critical Transfers:    {self.stats['critical_transfers']:,}")
         print(f"Mints:                 {self.stats['mints']:,}")
         print(f"Burns:                 {self.stats['burns']:,}")
-        print("-"*80 + "\n")
+        print("-" * 80 + "\n")
 
 
 def main():
@@ -299,46 +305,47 @@ Examples:
 
   # Start monitoring from beginning of topic
   %(prog)s --from-beginning -v
-        """
+        """,
     )
 
     # Kafka configuration
-    kafka_group = parser.add_argument_group('Kafka Options')
+    kafka_group = parser.add_argument_group("Kafka Options")
     kafka_group.add_argument(
         "--kafka-bootstrap",
         type=str,
         default="localhost:9092",
-        help="Kafka bootstrap servers, comma-separated (default: %(default)s)"
+        help="Kafka bootstrap servers, comma-separated (default: %(default)s)",
     )
     kafka_group.add_argument(
         "--kafka-topic",
         type=str,
         default="stablecoin-transfers",
-        help="Kafka topic to monitor (default: %(default)s)"
+        help="Kafka topic to monitor (default: %(default)s)",
     )
 
     # Alert thresholds
-    threshold_group = parser.add_argument_group('Alert Thresholds (USD)')
+    threshold_group = parser.add_argument_group("Alert Thresholds (USD)")
     threshold_group.add_argument(
         "--large-transfer",
         type=float,
-        default=1_000_000,
-        help="Threshold for large transfer warning (default: %(default)s)"
+        default=100_000,
+        help="Threshold for large transfer warning (default: %(default)s)",
     )
     threshold_group.add_argument(
         "--critical-transfer",
         type=float,
         default=10_000_000,
-        help="Threshold for critical transfer alert (default: %(default)s)"
+        help="Threshold for critical transfer alert (default: %(default)s)",
     )
 
     # Logging configuration
-    logging_group = parser.add_argument_group('Logging Options')
+    logging_group = parser.add_argument_group("Logging Options")
     logging_group.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="count",
         default=0,
-        help="Increase verbosity: -v for INFO, -vv for DEBUG"
+        help="Increase verbosity: -v for INFO, -vv for DEBUG",
     )
 
     args = parser.parse_args()
@@ -354,7 +361,7 @@ Examples:
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Initialize and run monitor

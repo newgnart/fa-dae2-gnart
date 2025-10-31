@@ -84,7 +84,7 @@ docker-compose up -d
 docker-compose ps
 
 # Check Kafka UI (optional)
-open http://localhost:8080
+open http://localhost:8082
 ```
 
 ### 3. Verify Kafka is Ready
@@ -133,8 +133,8 @@ uv run python scripts/el/kafka/consume_to_postgres.py \
 **Terminal 3: Start Alert Monitor (Optional)**
 ```bash
 # Monitor for large transfers
-uv run python scripts/el/kafka/monitor_alerts.py \
-    --large-transfer 1000000 \
+uv run python scripts/kafka/monitor_alerts.py \
+    --large-transfer 10000 \
     --critical-transfer 10000000 \
     -v
 
