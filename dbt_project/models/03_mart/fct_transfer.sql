@@ -11,7 +11,7 @@ WITH stg_transfer AS (
     SELECT * FROM {{ ref('stg_transfer') }}
     {% if is_incremental() %}
     -- Only process new blocks since last run
-        WHERE block_number > (SELECT COALESCE(MAX(block_number), 0) AS max_block FROM {{ this }})
+        WHERE block_number >= (SELECT COALESCE(MAX(block_number), 0) FROM {{ this }})
     {% endif %}
 ),
 

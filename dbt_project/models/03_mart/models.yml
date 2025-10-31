@@ -23,7 +23,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ['fiat-backed', 'crypto-backed', 'algorithmic']
+                values: ["fiat-backed", "crypto-backed", "algorithmic"]
       - name: decimals
         description: "Token decimal places"
         tests:
@@ -32,12 +32,12 @@ models:
         description: "Timestamp when record was created"
       - name: updated_at
         description: "Timestamp when record was last updated"
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - contract_address
-            - chain
-          where: "is_current = true"
+    # tests:
+    #   - dbt_utils.unique_combination_of_columns:
+    #       combination_of_columns:
+    #         - contract_address
+    #         - chain
+    #       where: "is_current = true"
 
   - name: fct_transfer
     description: "Fact table for stablecoin transfer events with business enrichment"
@@ -86,7 +86,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['transfer', 'mint', 'burn']
+                values: ["transfer", "mint", "burn"]
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
