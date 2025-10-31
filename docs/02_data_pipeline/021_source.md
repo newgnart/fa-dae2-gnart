@@ -11,57 +11,33 @@ pnpm dev
 
 When the indexer is running, you have few options:
 
-- Extract/save to parquet files, this will save the data to `.data/raw/transfer_{start_block}_{end_block}.parquet`
+- **Extract/save to parquet files**, this will save the data to `.data/raw/transfer_{start_block}_{end_block}.parquet`
+
 ```bash
 uv run scripts/el/extract_graphql.py \
 --query-file scripts/el/stables_transfers.graphql \
 -f transfer \
+--from_block 23650000
+--to_block 23660000
 -v
 ```
 
-- **Stream/load directly from the indexer to the database**
+- **Stream/load directly from the indexer to the postgres**
 ```bash
 uv run scripts/el/stream_graphql.py \
 -e http://localhost:8080/v1/graphql \
 --fields id,blockNumber,timestamp,contractAddress,from,to,value \
 --graphql-table stablesTransfers \
 -c postgres \
--s demo \
--t transfers \
+-s raw \
+-t raw_transfer
 ```
 
-
-
-
-## Wallet labels data
-- Get wallet addresses database, column `from` or `to`
-```sql
-SELECT DISTINCT address
-FROM (
-    SELECT "from" AS address
-    FROM raw.transfers
-    UNION ALL
-    SELECT "to" AS address
-    FROM raw.transfers
-) combined
-WHERE address IS NOT NULL
-ORDER BY address;
-```
-Save those addresses to a file, e.g. `addresses.csv`
-
-- Scrape wallet labels from Etherscan
+- **Move data from postgres to snowflake**
 ```bash
-uv run scripts/el/scrape_etherscan.py 
--i .data/addresses.csv \
--o .data/raw/labels.csv \
+uv run python scripts/el/pg2sf_raw_transfer.py \
+--from_block 23650000 \
+--to_block 23660000 \
+-v
 ```
 
-- Load wallet labels to database
-```bash
-uv run scripts/el/load.py \
--f .data/raw/wallet_labels.csv \
--c postgres \
--s demo \
--t wallet_labels \
--w append
-```
