@@ -89,6 +89,7 @@ models:
                 values: ["transfer", "mint", "burn"]
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - transaction_hash
-            - log_index
+          arguments:
+            combination_of_columns:
+              - transaction_hash
+              - log_index

@@ -61,6 +61,7 @@ models:
         description: "DLT unique row identifier"
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - contract_address
-            - chain
+          arguments:
+            combination_of_columns:
+              - contract_address
+              - chain

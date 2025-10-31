@@ -7,11 +7,12 @@
     )
 }}
 
+
 WITH stg_transfer AS (
     SELECT * FROM {{ ref('stg_transfer') }}
     {% if is_incremental() %}
     -- Only process new blocks since last run
-        WHERE block_number >= (SELECT COALESCE(MAX(block_number), 0) FROM {{ this }})
+        WHERE block_number >= (SELECT COALESCE(MAX(block_number), 0) AS max_block FROM {{ this }})
     {% endif %}
 ),
 
@@ -33,9 +34,10 @@ parsed AS (
 
         -- Contract/token dimension
         'ethereum' AS chain,
-        from_address,  -- TODO: get chain from raw data when available
+        from_address, -- TODO: get chain from raw data when available
 
         -- Address dimensions
+
         to_address,
         SPLIT_PART(id, '_', 1) AS transaction_hash
 
@@ -75,6 +77,7 @@ enriched AS (
 
         -- Convert to decimal amount using actual decimals from dim_stablecoin
         -- For stablecoins, amount ≈ USD value. TODO: have dim_price table
+
         {{ convert_token_amount('s.amount_raw', 'COALESCE(d.decimals, 18)', 2) }} AS amount
 
     FROM parsed AS p
@@ -102,5 +105,8 @@ SELECT
     name,
     decimals,
     transaction_type,
-    amount
+    amount,
+
+    -- Audit column to track incremental runs
+    CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()) AS dbt_loaded_at
 FROM enriched

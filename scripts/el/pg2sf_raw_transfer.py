@@ -89,7 +89,7 @@ def load_to_snowflake(
     result = sf_loader.load_dataframe(
         df=df,
         schema="raw",
-        table_name="transfer",
+        table_name="raw_transfer",
         write_disposition="append",
     )
 
