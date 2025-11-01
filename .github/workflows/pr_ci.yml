@@ -3,7 +3,7 @@ name: PR CI - SQLFluff Linting and dbt Testing
 on:
   pull_request:
     branches: [main, develop]
-    paths: # Only trigger when relevant files change
+    paths: # Only trigger when
       - "**.sql"
       - "dbt_project/**"
       - ".github/workflows/pr_ci.yml"
@@ -43,7 +43,7 @@ jobs:
 
       - name: Run dbt debug
         run: |
-          cd dbt_project && uv run dbt debug --target test
+          cd dbt_project && uv run dbt debug
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run dbt deps
         run: |
-          cd dbt_project && uv run dbt deps --target test
+          cd dbt_project && uv run dbt deps
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run dbt tests
         run: |
-          cd dbt_project && uv run dbt test --target test
+          cd dbt_project && uv run dbt test
         env:
           SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ vars.SNOWFLAKE_USER }}
