@@ -104,11 +104,11 @@ docker exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
 **Terminal 1: Start Producer**
 ```bash
 # Poll GraphQL every 5 seconds and publish to Kafka
-uv run python scripts/el/kafka/produce_from_graphql.py \
-    --endpoint http://localhost:8080/v1/graphql \
-    --kafka-topic stablecoin-transfers \
-    --poll-interval 5 \
-    -v
+uv run python scripts/kafka/produce_from_graphql.py \
+--endpoint http://localhost:8080/v1/graphql \
+--kafka-topic stablecoin-transfers \
+--poll-interval 5 \
+-v
 
 # Expected output:
 # 2025-01-30 10:00:00 - INFO - Kafka producer initialized: localhost:9092 → stablecoin-transfers
@@ -118,25 +118,25 @@ uv run python scripts/el/kafka/produce_from_graphql.py \
 **Terminal 2: Start Consumer**
 ```bash
 # Consume from Kafka and write to PostgreSQL
-uv run python scripts/el/kafka/consume_to_postgres.py \
-    --kafka-topic stablecoin-transfers \
-    --schema raw \
-    --table transfers_kafka \
-    --batch-size 100 \
-    -v
+uv run python scripts/kafka/consume_to_postgres.py \
+--kafka-topic stablecoin-transfers \
+--schema raw \
+--table transfers_kafka \
+--batch-size 100 \
+-v
 
 # Expected output:
 # 2025-01-30 10:00:10 - INFO - Consumer initialized: stablecoin-transfers → raw.transfers_kafka
 # 2025-01-30 10:00:15 - INFO - Loaded 100 records to raw.transfers_kafka
 ```
 
-**Terminal 3: Start Alert Monitor (Optional)**
+**Terminal 3: Start Alert Monitor**
 ```bash
 # Monitor for large transfers
 uv run python scripts/kafka/monitor_alerts.py \
-    --large-transfer 10000 \
-    --critical-transfer 10000000 \
-    -v
+--large-transfer 10000 \
+--critical-transfer 10000000 \
+-v
 
 # Expected output when large transfer detected:
 # ================================================================================
@@ -321,36 +321,36 @@ CRITICAL_TRANSFER_THRESHOLD=10000000
 
 ### Producer Settings
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--endpoint` | `http://localhost:8080/v1/graphql` | GraphQL endpoint URL |
-| `--graphql-table` | `stablesTransfers` | GraphQL table name |
-| `--fields` | `id,blockNumber,...` | Fields to fetch |
-| `--poll-interval` | `5` | Seconds between polls |
-| `--kafka-bootstrap` | `localhost:9092` | Kafka brokers |
-| `--kafka-topic` | `stablecoin-transfers` | Topic name |
-| `--state-file` | `.kafka_stream_state.json` | State persistence |
+| Argument            | Default                            | Description           |
+| ------------------- | ---------------------------------- | --------------------- |
+| `--endpoint`        | `http://localhost:8080/v1/graphql` | GraphQL endpoint URL  |
+| `--graphql-table`   | `stablesTransfers`                 | GraphQL table name    |
+| `--fields`          | `id,blockNumber,...`               | Fields to fetch       |
+| `--poll-interval`   | `5`                                | Seconds between polls |
+| `--kafka-bootstrap` | `localhost:9092`                   | Kafka brokers         |
+| `--kafka-topic`     | `stablecoin-transfers`             | Topic name            |
+| `--state-file`      | `.kafka_stream_state.json`         | State persistence     |
 
 ### Consumer Settings
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--kafka-bootstrap` | `localhost:9092` | Kafka brokers |
-| `--kafka-topic` | `stablecoin-transfers` | Topic to consume |
-| `--kafka-group` | `postgres-sink` | Consumer group ID |
-| `--schema` | `raw` | Target schema |
-| `--table` | `transfers_kafka` | Target table |
-| `--batch-size` | `100` | Messages per batch |
-| `--batch-timeout-ms` | `5000` | Max wait for batch |
+| Argument             | Default                | Description        |
+| -------------------- | ---------------------- | ------------------ |
+| `--kafka-bootstrap`  | `localhost:9092`       | Kafka brokers      |
+| `--kafka-topic`      | `stablecoin-transfers` | Topic to consume   |
+| `--kafka-group`      | `postgres-sink`        | Consumer group ID  |
+| `--schema`           | `raw`                  | Target schema      |
+| `--table`            | `transfers_kafka`      | Target table       |
+| `--batch-size`       | `100`                  | Messages per batch |
+| `--batch-timeout-ms` | `5000`                 | Max wait for batch |
 
 ### Alert Monitor Settings
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--kafka-bootstrap` | `localhost:9092` | Kafka brokers |
-| `--kafka-topic` | `stablecoin-transfers` | Topic to monitor |
-| `--large-transfer` | `1000000` | Warning threshold (USD) |
-| `--critical-transfer` | `10000000` | Critical threshold (USD) |
+| Argument              | Default                | Description              |
+| --------------------- | ---------------------- | ------------------------ |
+| `--kafka-bootstrap`   | `localhost:9092`       | Kafka brokers            |
+| `--kafka-topic`       | `stablecoin-transfers` | Topic to monitor         |
+| `--large-transfer`    | `1000000`              | Warning threshold (USD)  |
+| `--critical-transfer` | `10000000`             | Critical threshold (USD) |
 
 ## Troubleshooting
 
@@ -422,13 +422,13 @@ uv run python scripts/el/kafka/produce_from_graphql.py \
 
 Based on local testing:
 
-| Metric | Value |
-|--------|-------|
-| **Throughput** | ~1,000 messages/sec (single producer) |
-| **Latency** | < 100ms (produce + consume) |
-| **Batch efficiency** | 90% reduction in DB connections |
-| **Message size** | ~500 bytes (gzipped) |
-| **Storage** | ~1GB per 2M messages (7-day retention) |
+| Metric               | Value                                  |
+| -------------------- | -------------------------------------- |
+| **Throughput**       | ~1,000 messages/sec (single producer)  |
+| **Latency**          | < 100ms (produce + consume)            |
+| **Batch efficiency** | 90% reduction in DB connections        |
+| **Message size**     | ~500 bytes (gzipped)                   |
+| **Storage**          | ~1GB per 2M messages (7-day retention) |
 
 ## Production Considerations
 

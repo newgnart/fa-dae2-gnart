@@ -37,8 +37,6 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from onchaindata.data_pipeline import Loader
 from onchaindata.data_pipeline.kafka_consumer import KafkaToPostgresConsumer
@@ -64,67 +62,70 @@ Examples:
 
   # Multiple consumers for parallel processing (same group ID)
   %(prog)s --kafka-group my-group  # Run this in multiple terminals
-        """
+        """,
     )
 
     # Kafka configuration
-    kafka_group = parser.add_argument_group('Kafka Options')
+    kafka_group = parser.add_argument_group("Kafka Options")
     kafka_group.add_argument(
         "--kafka-bootstrap",
         type=str,
         default="localhost:9092",
-        help="Kafka bootstrap servers, comma-separated (default: %(default)s)"
+        help="Kafka bootstrap servers, comma-separated (default: %(default)s)",
     )
     kafka_group.add_argument(
         "--kafka-topic",
         type=str,
         default="stablecoin-transfers",
-        help="Kafka topic to consume from (default: %(default)s)"
+        help="Kafka topic to consume from (default: %(default)s)",
     )
     kafka_group.add_argument(
         "--kafka-group",
         type=str,
         default="postgres-sink",
-        help="Consumer group ID (default: %(default)s)"
+        help="Consumer group ID (default: %(default)s)",
     )
 
     # Database configuration
-    db_group = parser.add_argument_group('Database Options')
+    db_group = parser.add_argument_group("Database Options")
     db_group.add_argument(
-        "-s", "--schema",
+        "-s",
+        "--schema",
         type=str,
         default="raw",
-        help="Target database schema (default: %(default)s)"
+        help="Target database schema (default: %(default)s)",
     )
     db_group.add_argument(
-        "-t", "--table",
+        "-t",
+        "--table",
         type=str,
         default="transfers_kafka",
-        help="Target table name (default: %(default)s)"
+        help="Target table name (default: %(default)s)",
     )
 
     # Performance tuning
-    perf_group = parser.add_argument_group('Performance Options')
+    perf_group = parser.add_argument_group("Performance Options")
     perf_group.add_argument(
         "--batch-size",
         type=int,
         default=100,
-        help="Number of messages to batch before writing (default: %(default)s)"
+        help="Number of messages to batch before writing (default: %(default)s)",
     )
     perf_group.add_argument(
         "--batch-timeout-ms",
         type=int,
         default=5000,
-        help="Max milliseconds to wait for batch completion (default: %(default)s)"
+        help="Max milliseconds to wait for batch completion (default: %(default)s)",
     )
 
     # Logging configuration
-    logging_group = parser.add_argument_group('Logging Options')
+    logging_group = parser.add_argument_group("Logging Options")
     logging_group.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="count",
         default=0,
-        help="Increase verbosity: -v for INFO, -vv for DEBUG"
+        help="Increase verbosity: -v for INFO, -vv for DEBUG",
     )
 
     args = parser.parse_args()
@@ -140,7 +141,7 @@ Examples:
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Log configuration

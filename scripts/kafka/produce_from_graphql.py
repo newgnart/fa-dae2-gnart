@@ -35,10 +35,6 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-
 from onchaindata.data_extraction.kafka_stream import GraphQLStreamKafka
 
 logger = logging.getLogger(__name__)
@@ -58,67 +54,69 @@ Examples:
 
   # High-frequency polling (every 2 seconds)
   %(prog)s --poll-interval 2 -vv
-        """
+        """,
     )
 
     # GraphQL configuration
-    graphql_group = parser.add_argument_group('GraphQL Options')
+    graphql_group = parser.add_argument_group("GraphQL Options")
     graphql_group.add_argument(
-        "-e", "--endpoint",
+        "-e",
+        "--endpoint",
         type=str,
         default="http://localhost:8080/v1/graphql",
-        help="GraphQL endpoint URL (default: %(default)s)"
+        help="GraphQL endpoint URL (default: %(default)s)",
     )
     graphql_group.add_argument(
         "--graphql-table",
         type=str,
         default="stablesTransfers",
-        help="Name of the GraphQL table/query (default: %(default)s)"
+        help="Name of the GraphQL table/query (default: %(default)s)",
     )
     graphql_group.add_argument(
         "--fields",
         type=str,
         default="id,blockNumber,timestamp,contractAddress,from,to,value",
-        help="Comma-separated list of fields to fetch (default: %(default)s)"
+        help="Comma-separated list of fields to fetch (default: %(default)s)",
     )
     graphql_group.add_argument(
         "--poll-interval",
         type=int,
         default=5,
-        help="Seconds to wait between polls (default: %(default)s)"
+        help="Seconds to wait between polls (default: %(default)s)",
     )
 
     # Kafka configuration
-    kafka_group = parser.add_argument_group('Kafka Options')
+    kafka_group = parser.add_argument_group("Kafka Options")
     kafka_group.add_argument(
         "--kafka-bootstrap",
         type=str,
         default="localhost:9092",
-        help="Kafka bootstrap servers, comma-separated (default: %(default)s)"
+        help="Kafka bootstrap servers, comma-separated (default: %(default)s)",
     )
     kafka_group.add_argument(
         "--kafka-topic",
         type=str,
         default="stablecoin-transfers",
-        help="Kafka topic name (default: %(default)s)"
+        help="Kafka topic name (default: %(default)s)",
     )
 
     # State management
-    state_group = parser.add_argument_group('State Management')
+    state_group = parser.add_argument_group("State Management")
     state_group.add_argument(
         "--state-file",
         type=str,
         default=".kafka_stream_state.json",
-        help="Path to state file for resuming (default: %(default)s)"
+        help="Path to state file for resuming (default: %(default)s)",
     )
 
     # Logging configuration
-    logging_group = parser.add_argument_group('Logging Options')
+    logging_group = parser.add_argument_group("Logging Options")
     logging_group.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="count",
         default=0,
-        help="Increase verbosity: -v for INFO, -vv for DEBUG"
+        help="Increase verbosity: -v for INFO, -vv for DEBUG",
     )
 
     args = parser.parse_args()
@@ -134,7 +132,7 @@ Examples:
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Parse fields

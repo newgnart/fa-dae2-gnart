@@ -33,8 +33,6 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +95,9 @@ class AlertMonitor:
         Runs forever until interrupted.
         """
         logger.info("Monitoring for alerts... Press Ctrl+C to stop")
-        print("\n" + "=" * 80)
-        print("ALERT MONITOR ACTIVE")
-        print("=" * 80 + "\n")
+        logger.info("\n" + "=" * 80)
+        logger.info("ALERT MONITOR ACTIVE")
+        logger.info("=" * 80 + "\n")
 
         try:
             for message in self.consumer:
@@ -208,18 +206,21 @@ class AlertMonitor:
         # Determine emoji based on level
         emoji = "🚨" if level == "CRITICAL" else "⚠️"
 
-        print("\n" + "=" * 80)
-        print(f"{emoji} {level} ALERT: Large Stablecoin Transfer Detected")
-        print("=" * 80)
-        print(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
-        print(f"Amount:          ${amount_usd:,.2f}")
-        print(f"From:            {transfer['from']}")
-        print(f"To:              {transfer['to']}")
-        print(f"Block Number:    {transfer.get('blockNumber', 'N/A')}")
-        print(f"Timestamp:       {self._format_timestamp(transfer.get('timestamp'))}")
-        print(f"Transaction:     {tx_hash}")
-        print(f"Contract:        {transfer.get('contractAddress', 'N/A')}")
-        print("=" * 80 + "\n")
+        logger.info("\n" + "=" * 80)
+        logger.info(f"{emoji} {level} ALERT: Large Stablecoin Transfer Detected")
+        logger.info("=" * 80)
+        # print(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
+        logger.info(f"Contract:        {transfer.get('contractAddress', 'N/A')}")
+        logger.info(f"Amount:          ${amount_usd:,.2f}")
+        logger.info(f"From:            {transfer['from']}")
+        logger.info(f"To:              {transfer['to']}")
+        logger.info(f"Block Number:    {transfer.get('blockNumber', 'N/A')}")
+        logger.info(
+            f"Timestamp:       {self._format_timestamp(transfer.get('timestamp'))}"
+        )
+        logger.info(f"Transaction:     {tx_hash}")
+
+        logger.info("=" * 80 + "\n")
 
         # TODO: Send to external alerting systems
         # Example:
@@ -239,17 +240,17 @@ class AlertMonitor:
         emoji = "🟢" if event_type == "MINT" else "🔴"
         tx_hash = transfer.get("id", "unknown").split("_")[0]
 
-        print("\n" + "=" * 80)
-        print(f"{emoji} {event_type} EVENT: Large Supply Change Detected")
-        print("=" * 80)
-        print(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
-        print(f"Amount:          ${amount_usd:,.2f}")
-        print(
+        logger.info("\n" + "=" * 80)
+        logger.info(f"{emoji} {event_type} EVENT: Large Supply Change Detected")
+        logger.info("=" * 80)
+        logger.info(f"Symbol:          {transfer.get('symbol', 'UNKNOWN')}")
+        logger.info(f"Amount:          ${amount_usd:,.2f}")
+        logger.info(
             f"Address:         {transfer.get('to' if event_type == 'MINT' else 'from', 'N/A')}"
         )
-        print(f"Block Number:    {transfer.get('blockNumber', 'N/A')}")
-        print(f"Transaction:     {tx_hash}")
-        print("=" * 80 + "\n")
+        logger.info(f"Block Number:    {transfer.get('blockNumber', 'N/A')}")
+        logger.info(f"Transaction:     {tx_hash}")
+        logger.info("=" * 80 + "\n")
 
     def _format_timestamp(self, timestamp) -> str:
         """
@@ -280,15 +281,15 @@ class AlertMonitor:
 
     def _print_stats(self):
         """Print monitoring statistics."""
-        print("\n" + "-" * 80)
-        print("MONITORING STATISTICS")
-        print("-" * 80)
-        print(f"Total Processed:       {self.stats['total_processed']:,}")
-        print(f"Large Transfers:       {self.stats['large_transfers']:,}")
-        print(f"Critical Transfers:    {self.stats['critical_transfers']:,}")
-        print(f"Mints:                 {self.stats['mints']:,}")
-        print(f"Burns:                 {self.stats['burns']:,}")
-        print("-" * 80 + "\n")
+        logger.info("\n" + "-" * 80)
+        logger.info("MONITORING STATISTICS")
+        logger.info("-" * 80)
+        logger.info(f"Total Processed:       {self.stats['total_processed']:,}")
+        logger.info(f"Large Transfers:       {self.stats['large_transfers']:,}")
+        logger.info(f"Critical Transfers:    {self.stats['critical_transfers']:,}")
+        logger.info(f"Mints:                 {self.stats['mints']:,}")
+        logger.info(f"Burns:                 {self.stats['burns']:,}")
+        logger.info("-" * 80 + "\n")
 
 
 def main():
