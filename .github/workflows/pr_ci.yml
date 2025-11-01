@@ -3,7 +3,7 @@ name: PR CI - SQLFluff Linting and dbt Testing
 on:
   pull_request:
     branches: [main, develop]
-    paths: # Only trigger when relevant files change
+    paths: # Only trigger when
       - "**.sql"
       - "dbt_project/**"
       - ".github/workflows/pr_ci.yml"
